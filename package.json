@@ -1,0 +1,87 @@
+{
+  "name": "pixel-bug",
+  "version": "1.5.18",
+  "description": "Pixel art and sprite editor",
+  "main": "src/main.js",
+  "scripts": {
+    "preinstall": "node scripts/install-guard.js",
+    "check:install": "node scripts/install-guard.js",
+    "start": "electron .",
+    "dev": "electron .",
+    "build": "electron-builder",
+    "dist": "electron-builder",
+    "test": "node --test test/*.test.js",
+    "test:smoke": "electron test/electron-smoke.js",
+    "test:e2e": "electron test/electron-smoke.js",
+    "test:ci": "node --test test/*.test.js && electron test/electron-smoke.js",
+    "test:security": "node --test test/security.test.js test/install-security.test.js test/hardening.test.js",
+    "audit:dependencies": "npm audit --package-lock-only --audit-level=low",
+    "check:source": "node scripts/source-check.js"
+  },
+  "keywords": [
+    "electron",
+    "pixel-art",
+    "sprite",
+    "editor"
+  ],
+  "author": "KeyOuts",
+  "license": "GPL-3.0-or-later",
+  "devDependencies": {
+    "electron": "42.9.1",
+    "electron-builder": "26.15.7"
+  },
+  "productName": "Pixel Bug",
+  "build": {
+    "appId": "com.pixelbug.app",
+    "productName": "Pixel Bug",
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json",
+      "integrations/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../LICENSE",
+        "to": "LICENSE"
+      },
+      {
+        "from": "../PRIVACY_POLICY.md",
+        "to": "PRIVACY_POLICY.md"
+      }
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": "nsis"
+    },
+    "mac": {
+      "icon": "assets/icon.png",
+      "target": "dmg"
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "target": "AppImage"
+    },
+    "nsis": {
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Pixel Bug"
+    },
+    "asar": true,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    }
+  },
+  "overrides": {
+    "@xmldom/xmldom": "0.8.15"
+  }
+}

@@ -1,0 +1,2409 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="default-src 'self'; script-src 'self'; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self'; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none';" http-equiv="Content-Security-Policy"/>
+<title>Pixel Bug</title>
+<script src="./theme.js"></script>
+<link href="./styles.css" rel="stylesheet"/>
+<link href="./styles-workspaces.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="app-shell">
+<header class="top-bar">
+<div>
+<h1>Pixel Bug</h1>
+</div>
+<nav aria-label="Mode, project, and export actions" class="top-actions">
+<button aria-describedby="print-mode-help" aria-pressed="false" id="print-mode-btn" type="button">Print Mode</button>
+<button aria-pressed="false" id="play-mode-btn" type="button">Play Mode</button>
+<button aria-describedby="voxel-mode-top-help" aria-pressed="false" id="voxel-mode-btn" type="button">Voxel Mode</button>
+<button aria-pressed="false" id="mod-mode-btn" type="button">Mod Mode</button>
+<button aria-pressed="false" id="rearrange-btn" type="button">Rearrange</button>
+<span class="file-actions-wrap">
+<button aria-controls="file-actions-menu" aria-expanded="false" aria-haspopup="menu" id="file-actions-btn" type="button">File<span class="sr-only"> actions for new, open, and save</span></button>
+<span aria-label="Project file menu" class="file-actions-menu" hidden="" id="file-actions-menu" role="menu">
+<button id="new-project-btn" role="menuitem" type="button">New<span class="sr-only"> project</span></button>
+<button id="open-project-btn" role="menuitem" type="button">Open<span class="sr-only"> project</span></button>
+<button id="save-project-btn" role="menuitem" type="button">Save<span class="sr-only"> project</span></button>
+<button id="save-project-as-btn" role="menuitem" type="button">Save As<span class="sr-only"> a new project file</span></button>
+<button id="recent-projects-btn" role="menuitem" type="button">Recent<span class="sr-only"> projects</span></button>
+</span>
+</span>
+<button aria-expanded="false" aria-haspopup="dialog" id="export-menu-btn" type="button">Export</button>
+<button aria-expanded="false" aria-haspopup="dialog" id="settings-btn" type="button">Settings</button>
+</nav>
+</header>
+<div aria-describedby="document-tabs-help" aria-label="Open project documents" class="document-strip">
+<div class="document-tabs" id="document-tabs" role="tablist"></div>
+<button aria-label="Create another project tab" class="document-add-btn" id="document-new-tab-btn" type="button">+</button>
+<span class="sr-only" id="document-tabs-help">Switch between open projects. Unsaved project tabs are marked with a dot. Use the plus button to create another project.</span>
+<span aria-atomic="true" aria-live="polite" class="sr-only" id="document-save-status" role="status">All open projects are saved.</span>
+</div>
+<p class="sr-only" id="print-mode-help">Print Mode changes the dashboard to print production tools for DPI sizing, repeat preview, washi tape layout, bleed guides, and print PNG export.</p>
+<p class="sr-only" id="voxel-mode-top-help">Voxel Mode has a slice editor, 3D view, animation tools, rigging tools, and exports.</p>
+<main class="workspace">
+<aside aria-label="Drawing tools" class="panel tools-panel rearrange-zone" data-zone="left">
+<section class="dock-card" data-dock-id="pixelizer">
+<button class="feature-btn" id="open-pixelizer-btn" type="button">Pixelize Image</button>
+<button class="feature-btn" id="open-voxel-btn" type="button">Voxel Preview</button>
+<button class="feature-btn" id="open-model-converter-btn" type="button">3D Converter</button>
+<button aria-describedby="touch-toggle-help" aria-pressed="false" class="feature-btn" id="touch-toggle-btn" type="button">Touch Toggle<span class="sr-only">, currently off</span></button>
+<p class="sr-only" id="touch-toggle-help">Touch Toggle switches Base Mode to a compact horizontal swipe toolbar, gives the palette more room, and uses safer touch input handling. It does not change project artwork or export data.</p>
+</section>
+<section class="dock-card" data-dock-id="project-actions">
+<h2>Project</h2>
+<p class="sr-only" id="project-actions-help">Open local gallery and snapshot restore tools. This section can be moved while Rearrange is active.</p>
+<button aria-describedby="project-actions-help" aria-expanded="false" aria-haspopup="dialog" class="feature-btn" id="project-gallery-btn" type="button">Gallery<span class="sr-only">, open local project gallery</span></button>
+<button aria-describedby="project-actions-help" aria-expanded="false" aria-haspopup="dialog" class="feature-btn" id="snapshot-history-btn" type="button">Snapshots<span class="sr-only">, open local restore points</span></button>
+</section>
+<section class="dock-card" data-dock-id="tools">
+<h2>Tools</h2>
+<div class="tool-grid" id="tool-grid"></div>
+</section>
+<section class="dock-card" data-dock-id="text-tool">
+<h2>Pixel Text</h2>
+<p class="sr-only" id="pixel-text-help">Pixel text tool. Enter text, choose a size, select the text tool, then click the canvas to stamp text into the active layer. Auto size chooses the largest text that fits the remaining canvas area and uses a compact font when needed.</p>
+<label for="pixel-text-input">Text</label>
+<input aria-describedby="pixel-text-help" id="pixel-text-input" maxlength="48" type="text" value="Pixel Bug"/>
+<label for="pixel-text-scale">Text Size</label>
+<input aria-describedby="pixel-text-help pixel-text-scale-output" id="pixel-text-scale" max="8" min="0" type="range" value="0"/>
+<output aria-live="polite" for="pixel-text-scale" id="pixel-text-scale-output">Auto</output>
+</section>
+<section class="dock-card" data-dock-id="drawing-controls">
+<label for="color-picker">Color</label>
+<input id="color-picker" type="color" value="#000000"/>
+<label for="brush-size">Brush Size</label>
+<input id="brush-size" max="8" min="1" type="range" value="1"/>
+<output for="brush-size" id="brush-size-output">1 px</output>
+<label for="canvas-size">Canvas Size</label>
+<select id="canvas-size">
+<option value="16">16 × 16</option>
+<option selected="" value="32">32 × 32</option>
+<option value="64">64 × 64</option>
+<option value="128">128 × 128</option>
+<option value="256">256 × 256</option>
+<option value="512">512 × 512</option>
+<option value="64x32">64 × 32</option>
+<option value="128x64">128 × 64</option>
+<option value="256x144">256 × 144</option>
+<option value="320x180">320 × 180</option>
+<option value="32x64">32 × 64</option>
+<option value="64x128">64 × 128</option>
+<option disabled="" value="">Custom</option>
+</select>
+<button class="feature-btn custom-size-btn" id="custom-size-btn" type="button">Custom Size</button>
+</section>
+<section class="dock-card" data-dock-id="quick-actions">
+<button aria-pressed="true" id="toggle-grid-btn">Grid On</button>
+<button aria-pressed="true" id="toggle-onion-btn">Onion On</button>
+<button aria-label="Toggle reference image" aria-pressed="false" id="ref-btn">Ref</button>
+<button aria-label="Toggle storyboard preview" aria-pressed="false" id="story-btn">Story</button>
+<label class="inline-control" for="symmetry-mode-select">Sym</label>
+<select aria-label="Choose symmetry mode" id="symmetry-mode-select">
+<option value="off">Off</option>
+<option value="vertical">Vertical</option>
+<option value="horizontal">Horizontal</option>
+<option value="both">Both</option>
+<option value="quad">Quad</option>
+</select>
+<input accept="image/*" aria-label="Choose reference image" class="sr-only" id="ref-input" type="file"/>
+<button id="undo-btn">Undo</button>
+<button id="redo-btn">Redo</button>
+<div aria-label="Selection actions" class="selection-actions">
+<button id="selection-copy-btn" type="button">Copy Sel</button>
+<button id="selection-cut-btn" type="button">Cut Sel</button>
+<button id="selection-paste-btn" type="button">Paste Sel</button>
+<button id="selection-delete-btn" type="button">Delete Sel</button>
+<button aria-describedby="selection-command-help" id="selection-all-btn" type="button">Select All</button>
+<button aria-describedby="selection-command-help" id="selection-opaque-btn" type="button">Select Opaque</button>
+<button aria-describedby="selection-command-help" id="selection-reselect-btn" type="button">Reselect</button>
+<span class="sr-only" id="selection-command-help">Select the full canvas, select painted pixels on the active layer, or restore the most recently cleared selection.</span>
+<button aria-describedby="selection-color-help" id="selection-color-btn" type="button">Select Color</button>
+<button id="selection-invert-btn" type="button">Invert Sel</button>
+<button id="selection-fill-btn" type="button">Fill Sel</button>
+<button id="selection-stroke-btn" type="button">Stroke Sel</button>
+<button id="selection-border-btn" type="button">Border Sel</button>
+<button id="selection-flip-h-btn" type="button">Flip H</button>
+<button id="selection-flip-v-btn" type="button">Flip V</button>
+<button id="selection-rotate-btn" type="button">Rotate 90</button>
+<button id="selection-clear-btn" title="Esc" type="button">Unselect</button>
+<button aria-describedby="selection-transform-help" aria-haspopup="dialog" id="selection-transform-btn" type="button">Transform</button>
+<span class="sr-only" id="selection-color-help">Select pixels in the active layer that match the current drawing color within the selected tolerance.</span>
+<span class="sr-only" id="selection-transform-help">Open precise nearest-neighbor selection transform controls.</span>
+</div>
+<div class="feature-grid selection-lab" aria-label="Advanced selection controls">
+<label for="selection-mode">Selection Mode</label>
+<select id="selection-mode" aria-describedby="selection-mode-help">
+<option value="rect">Rectangle</option>
+<option value="ellipse">Ellipse</option>
+<option value="lasso">Lasso</option>
+<option value="polygon">Polygon Lasso</option>
+<option value="wand">Magic Wand</option>
+<option value="color">By Color</option>
+</select>
+<span class="sr-only" id="selection-mode-help">Choose rectangle, ellipse, freehand lasso, polygon lasso, connected color, or every matching color. Hold Shift to add, Alt to subtract, or choose Intersect.</span>
+<label for="selection-combine">Combine</label>
+<select aria-describedby="selection-combine-help" id="selection-combine">
+<option value="replace">Replace</option>
+<option value="add">Add</option>
+<option value="subtract">Subtract</option>
+<option value="intersect">Intersect</option>
+</select>
+<span class="sr-only" id="selection-combine-help">Choose how a new selection changes the existing selection.</span>
+<label for="selection-tolerance">Tolerance</label>
+<input aria-describedby="selection-tolerance-help" id="selection-tolerance" max="255" min="0" type="number" value="0"/>
+<span class="sr-only" id="selection-tolerance-help">Zero selects exact colors. Higher values include nearby red, green, and blue channel values.</span>
+<label for="selection-stroke-mode">Border Mode</label>
+<select id="selection-stroke-mode"><option value="inside">Inside</option><option value="outside">Outside</option><option value="center">Center</option></select>
+<button id="selection-grow-btn" type="button">Grow</button>
+<button id="selection-shrink-btn" type="button">Shrink</button>
+<output aria-live="polite" id="selection-count">No selection</output>
+</div>
+<p class="hint">Shortcuts: B pencil, E eraser, G fill, I pick color, L line, R rec / Ctrl circle, O ellipse, M select, V move, Ctrl+A select all. With Move active, arrows nudge selected pixels; Shift moves 8 px; Alt moves only the selection boundary. Ctrl-drag duplicates selected pixels.</p>
+</section>
+<section class="dock-card" data-dock-id="tilemap">
+<h2>Tilemap</h2>
+<p class="hint">Save selections as reusable project tiles, then stamp them into the active layer.</p>
+<label for="tilemap-select">Tile</label>
+<select aria-label="Choose saved tile" id="tilemap-select"></select>
+<div class="button-row action-row">
+<button id="tilemap-save-btn" type="button">Save Sel Tile</button>
+<button aria-pressed="false" id="tilemap-stamp-btn" type="button">Stamp Off</button>
+<button id="tilemap-delete-btn" type="button">Delete Tile</button>
+<button aria-describedby="tilemap-editor-help" aria-haspopup="dialog" id="tilemap-editor-btn" type="button">Map Editor</button>
+<span class="sr-only" id="tilemap-editor-help">Open the layered tile map editor with collision painting and Tiled JSON import and export.</span>
+</div>
+<div aria-label="Selected tile preview" class="mini-preview" id="tilemap-preview"></div>
+</section>
+<section class="dock-card" data-dock-id="brush-lab">
+<h2>Brush Lab</h2>
+<p class="hint">Make brushes and tune procedural patterns.</p>
+<label for="brush-preset-select">Brush Preset</label>
+<select aria-label="Choose brush preset" id="brush-preset-select"></select>
+<label for="brush-density">Pattern Density</label>
+<input aria-describedby="brush-density-help" id="brush-density" max="100" min="0" step="1" type="range" value="50"/>
+<output for="brush-density" id="brush-density-output">50%</output>
+<p class="control-hint" id="brush-density-help">Used by Dither, Noise, Cluster, and Hatch brushes.</p>
+<label for="brush-pattern-scale">Pattern Scale</label>
+<input aria-describedby="brush-pattern-scale-help" id="brush-pattern-scale" max="4" min="1" step="1" type="range" value="1"/>
+<output for="brush-pattern-scale" id="brush-pattern-scale-output">1×</output>
+<p class="control-hint" id="brush-pattern-scale-help">Changes the size of procedural brush cells without altering the normal brush-size slider.</p>
+<label for="brush-source-color">Source Color</label>
+<input aria-describedby="brush-source-color-help" id="brush-source-color" type="color" value="#000000"/>
+<p class="control-hint" id="brush-source-color-help">Selective Eraser removes this color. Replace changes this color to the current drawing color.</p>
+<div class="button-row action-row">
+<button id="brush-save-btn" type="button">Save Sel</button>
+<button id="brush-clear-btn" type="button">Clear</button>
+</div>
+<div aria-label="Selected brush preview" class="mini-preview" id="brush-preview"></div>
+</section>
+<section class="dock-card privacy-dock" data-dock-id="privacy">
+<button class="privacy-btn" id="open-privacy-btn" type="button">Privacy Policy</button>
+</section>
+</aside>
+<section aria-label="Pixel canvas area" class="stage-panel">
+<p class="sr-only" id="canvas-help">
+          Pixel canvas editor. Use pointer input to draw. For keyboard editing, use the arrow keys to move the pixel cursor and press Space or Enter to use the selected tool. Hold Shift while pressing an arrow key to extend a selection. For line, rectangle, and ellipse tools, press Space or Enter to set the start point, move the cursor, then press it again to finish. Escape cancels a keyboard shape preview.
+        </p>
+<div class="canvas-frame" data-fit-mode="workspace">
+<canvas aria-describedby="canvas-help canvas-cursor-status" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Enter Space" aria-label="Pixel canvas editor" height="768" id="pixel-canvas" tabindex="0" width="768"></canvas>
+</div>
+<div aria-live="polite" class="status-box" id="status">Ready.</div>
+<p aria-atomic="true" aria-live="polite" class="sr-only" id="canvas-cursor-status" role="status"></p>
+<p aria-live="polite" class="sr-only" id="recovery-status"></p>
+<section aria-label="Mod workbench" class="mod-sandbox-panel" hidden="" id="mod-sandbox-panel">
+<div class="mod-sandbox-head">
+<div>
+<h2>Mod Mode</h2>
+<p class="hint">Build, validate, test, and package brushes, effects, and Play Mode interface mods.</p>
+</div>
+<div class="mod-export-row">
+<button id="mod-new-btn" type="button">New Draft</button>
+<button id="mod-validate-btn" type="button">Validate Mod</button>
+<button id="mod-install-btn" type="button">Install Draft</button>
+<button id="mod-export-btn" type="button">Export .pbmod</button>
+<button id="mod-import-btn" type="button">Import .pbmod</button>
+<input accept=".pbmod,application/json" aria-label="Import mod" class="hidden-file" id="mod-import-input" type="file"/>
+</div>
+</div>
+<div class="mod-workbench-grid">
+<aside class="mod-side dock-card">
+<h3>Mod File</h3>
+<label for="mod-name-input">Name</label>
+<input id="mod-name-input" type="text" value="My Mod"/>
+<div class="mod-id-row">
+<label for="mod-id-input">ID</label>
+<button id="mod-sync-id-btn" type="button">Sync from Name</button>
+</div>
+<input id="mod-id-input" type="text" value="my-mod"/>
+<fieldset class="mod-component-fieldset">
+<legend>Package Contents</legend>
+<label><input checked="" id="mod-include-brush" type="checkbox"/> Brush</label>
+<label><input id="mod-include-effect" type="checkbox"/> Effect</label>
+<label><input id="mod-include-play-ui" type="checkbox"/> Play UI</label>
+</fieldset>
+<fieldset aria-describedby="mod-permissions-help" class="mod-permissions-fieldset">
+<legend>Permissions</legend>
+<label><input checked="" id="mod-permission-canvas-read" type="checkbox"/> Read current canvas</label>
+<label><input checked="" id="mod-permission-pixels-write" type="checkbox"/> Return changed pixels</label>
+<label><input id="mod-permission-play-ui" type="checkbox"/> Change Play Mode interface</label>
+<p class="hint" id="mod-permissions-help">Validation tells you which permissions the current mod actually requires.</p>
+<output aria-live="polite" class="sr-only" id="mod-permissions-status">Mod permissions ready.</output>
+</fieldset>
+<div class="mod-health-card" aria-live="polite" id="mod-validation-status">Draft ready. Validation has not run yet.</div>
+<div aria-label="Mod mode notes" class="mod-note-list">
+<p><code>dot</code> = paint mark</p>
+<p><code>pixel</code> = current color</p>
+<p><code>effect</code> = changed pixel</p>
+</div>
+<output aria-live="polite" class="mod-draft-status" id="mod-draft-status">Draft autosave ready.</output>
+</aside>
+<section class="mod-preview-wrap dock-card">
+<div class="mod-card-head">
+<div>
+<h3>Test Canvas</h3>
+<p class="hint">Brush edits affect the test source. Live Effect previews non-destructively.</p>
+</div>
+<label class="mod-toggle"><input id="mod-use-canvas-input" type="checkbox"/> Use current canvas</label>
+</div>
+<div class="mod-preview-toolbar" aria-label="Test canvas actions">
+<button disabled="" id="mod-undo-btn" type="button">Undo</button>
+<button disabled="" id="mod-redo-btn" type="button">Redo</button>
+<button id="mod-reset-btn" type="button">Reset Test</button>
+<button id="mod-clear-btn" type="button">Clear</button>
+<button id="mod-test-brush-btn" type="button">Stamp Center</button>
+</div>
+<canvas aria-describedby="mod-preview-help mod-runner-status" aria-label="Safe mod preview" height="512" id="mod-preview-canvas" tabindex="0" width="512"></canvas>
+<p class="sr-only" id="mod-preview-help">The test canvas runs brush and effect code in a separate restricted process. Pointer painting tests the selected brush. Live Effect previews without changing the test source; Apply Effect Once commits the result to the test source.</p>
+<p aria-atomic="true" aria-live="polite" class="mod-runner-visible" id="mod-runner-status" role="status">Mod runner ready.</p>
+<div class="mod-test-actions">
+<button aria-pressed="false" id="mod-live-btn" type="button">Live Effect</button>
+<button id="mod-run-effect-btn" type="button">Apply Effect Once</button>
+</div>
+</section>
+<section aria-label="Brush and effect code" class="mod-code-stack">
+<div class="mod-code-card dock-card">
+<div class="mod-editor-head"><div><h3>Brush</h3><p class="hint">Return paint dots.</p></div><label>Source<select id="mod-brush-source"><option selected="" value="code">Custom Code</option><option value="installed">Installed Brush</option></select></label></div>
+<label class="mod-installed-row" for="mod-brush-select">Installed brush<select id="mod-brush-select"></select></label>
+<div class="mod-example-row">
+<button id="mod-example-dot-btn" type="button">Dot Example</button>
+<button id="mod-example-plus-btn" type="button">Plus Example</button>
+</div>
+<textarea aria-label="Brush code" id="mod-brush-code" rows="10" spellcheck="false">return [
+  { x, y, color },
+  { x: x + 1, y, color },
+  { x, y: y + 1, color }
+];</textarea>
+</div>
+<div class="mod-code-card dock-card">
+<div class="mod-editor-head"><div><h3>Effect</h3><p class="hint">Return changed pixels.</p></div><label>Source<select id="mod-effect-source"><option selected="" value="code">Custom Code</option><option value="installed">Installed Effect</option></select></label></div>
+<label class="mod-installed-row" for="mod-effect-select">Installed effect<select id="mod-effect-select"></select></label>
+<div class="mod-example-row">
+<button id="mod-example-invert-btn" type="button">Invert Example</button>
+<button id="mod-example-outline-btn" type="button">Outline Example</button>
+</div>
+<textarea aria-label="Effect code" id="mod-effect-code" rows="10" spellcheck="false">return pixels.map(row =&gt; row.map(px =&gt; {
+  if (!px) return px;
+  const n = parseInt(px.slice(1), 16);
+  const r = 255 - ((n &gt;&gt; 16) &amp; 255);
+  const g = 255 - ((n &gt;&gt; 8) &amp; 255);
+  const b = 255 - (n &amp; 255);
+  return `#${[r, g, b].map(v =&gt; v.toString(16).padStart(2, "0")).join("")}`;
+}));</textarea>
+</div>
+<div class="mod-code-card dock-card">
+<div class="mod-editor-head"><div><h3>Play UI</h3><p class="hint">Customize Play Mode dialogue boxes with JSON settings.</p></div><button id="mod-play-ui-current-btn" type="button">Load Current UI</button></div>
+<button id="mod-play-ui-apply-btn" type="button">Apply Play UI</button>
+<textarea aria-label="Play mode UI settings" id="mod-play-ui-code" rows="12" spellcheck="false">{
+  "dialogueBoxColor": "rgba(15,15,15,0.94)",
+  "dialogueInkColor": "#f7f0da",
+  "dialogueBorderColor": "#f7f0da",
+  "dialogueBorderWidth": 4,
+  "dialogueFont": "system-ui, sans-serif",
+  "dialogueNameSize": 16,
+  "dialogueTextSize": 15,
+  "dialogueMargin": 0.035,
+  "dialogueBoxHeight": 0.28,
+  "dialoguePortrait": true,
+  "dialogueCounter": true
+}</textarea>
+</div>
+</section>
+</div>
+</section>
+<div aria-label="Storyboard preview" class="storyboard-preview hidden" id="storyboard-preview"></div>
+</section>
+<aside aria-label="Print production tools" class="panel print-panel" hidden="">
+<section class="dock-card" data-dock-id="print-lab">
+<h2>Print Mode</h2>
+<p class="hint">Set physical size, preview repeats, add bleed guides, and export print-ready PNG files.</p>
+<p class="sr-only" id="print-lab-help">Print production tools. Use DPI and inch sizing to make PNG files for printing software. Use repeat preview for patterns and washi tape layouts.</p>
+<label for="print-dpi">DPI</label>
+<input aria-describedby="print-lab-help" id="print-dpi" max="1200" min="72" step="1" type="number" value="300"/>
+<label for="print-width">Art Width Inches</label>
+<input id="print-width" max="60" min="0.1" step="0.1" type="number" value="2"/>
+<label for="print-bleed">Bleed Inches</label>
+<input id="print-bleed" max="1" min="0" step="0.01" type="number" value="0.125"/>
+<label for="print-safe">Safe Margin Inches</label>
+<input id="print-safe" max="1" min="0" step="0.01" type="number" value="0.125"/>
+<label for="print-repeat">Print Preset</label>
+<select aria-describedby="print-preset-help" id="print-repeat">
+<option value="single">Single Art</option>
+<option selected="" value="tile">Seamless Tile</option>
+<option value="washi">Washi Strip</option>
+<option value="stamp-washi">Stamp Washi</option>
+<option value="sticker">Sticker Sheet</option>
+<option value="memo">Memo Pad</option>
+</select>
+<p class="control-hint" id="print-preset-help">Seamless Tile shows a repeated pattern preview so edge breaks are easier to spot.</p>
+<div aria-label="Print quality controls" class="print-quality-fields">
+<h3>Print Quality</h3>
+<label for="print-page-size">Sheet Size</label>
+<select id="print-page-size">
+<option selected="" value="none">Artwork Only</option>
+<option value="letter">US Letter 8.5 × 11 in</option>
+<option value="a4">A4 8.27 × 11.69 in</option>
+<option value="custom">Custom Sheet</option>
+</select>
+<label for="print-page-width">Sheet Width Inches</label>
+<input id="print-page-width" max="60" min="1" step="0.01" type="number" value="8.5"/>
+<label for="print-page-height">Sheet Height Inches</label>
+<input id="print-page-height" max="60" min="1" step="0.01" type="number" value="11"/>
+<label for="print-page-margin">Sheet Margin Inches</label>
+<input id="print-page-margin" max="2" min="0" step="0.01" type="number" value="0.25"/>
+<label for="print-resample-mode">Art Scaling</label>
+<select id="print-resample-mode">
+<option selected="" value="crisp">Pixel Crisp</option>
+<option value="smooth">Smooth Print</option>
+</select>
+<div aria-label="Print preview layer toggles" class="print-layer-toggles">
+<label class="check-row" for="print-show-art"><input checked="" id="print-show-art" type="checkbox"/> Artwork</label>
+<label class="check-row" for="print-show-guides"><input checked="" id="print-show-guides" type="checkbox"/> Bleed/Safe Guides</label>
+<label class="check-row" for="print-show-cutline"><input checked="" id="print-show-cutline" type="checkbox"/> Cutline Preview</label>
+</div>
+<button id="export-calibration-btn" type="button">Export Calibration PNG</button>
+</div>
+<div class="print-preset-fields" hidden="" id="print-washi-fields">
+<label for="print-strip-width">Washi Width Inches</label>
+<input id="print-strip-width" max="120" min="1" step="0.25" type="number" value="10"/>
+<label for="print-strip-height">Washi Height Inches</label>
+<input id="print-strip-height" max="6" min="0.1" step="0.1" type="number" value="0.6"/>
+<label for="print-stamp-curl-spacing">Stamp Curl Spacing Inches</label>
+<input id="print-stamp-curl-spacing" max="0.3" min="0.02" step="0.005" type="number" value="0.06"/>
+<label for="print-stamp-curl-depth">Stamp Curl Depth Inches</label>
+<input id="print-stamp-curl-depth" max="0.15" min="0.005" step="0.005" type="number" value="0.028"/>
+<label for="print-stamp-edge-difference">Stamp Edge Difference</label>
+<input aria-label="Stamp edge difference" id="print-stamp-edge-difference" max="1" min="0" step="0.05" type="range" value="0.5"/>
+<p class="control-hint">Controls how different/opposed the mirrored stamp edges feel.</p>
+<div aria-label="Custom stamp perforation editor" class="print-perforation-editor">
+<h3>Custom Perforation Editor</h3>
+<label for="print-stamp-teeth">Perforations Per Stamp Edge</label>
+<input aria-label="Perforations per stamp edge" id="print-stamp-teeth" max="32" min="4" step="1" type="range" value="10"/>
+<output for="print-stamp-teeth" id="print-stamp-teeth-value">10</output>
+<label for="print-stamp-roundness">Curve Roundness</label>
+<input aria-label="Stamp curve roundness" id="print-stamp-roundness" max="1.4" min="0.35" step="0.05" type="range" value="0.85"/>
+<output for="print-stamp-roundness" id="print-stamp-roundness-value">0.85</output>
+<label class="check-row" for="print-stamp-mirror-vertical">
+<input checked="" id="print-stamp-mirror-vertical" type="checkbox"/>
+                Mirror right-side perforations vertically
+              </label>
+</div>
+</div>
+<div class="print-preset-fields" hidden="" id="print-sticker-fields">
+<label for="print-sticker-cols">Sticker Columns</label>
+<input id="print-sticker-cols" max="12" min="1" step="1" type="number" value="3"/>
+<label for="print-sticker-rows">Sticker Rows</label>
+<input id="print-sticker-rows" max="12" min="1" step="1" type="number" value="3"/>
+<label for="print-sticker-gap">Sticker Gap Inches</label>
+<input id="print-sticker-gap" max="2" min="0" step="0.05" type="number" value="0.2"/>
+</div>
+<div class="print-preset-fields" hidden="" id="print-memo-fields">
+<label for="print-memo-height">Memo Height Inches</label>
+<input id="print-memo-height" max="14" min="1" step="0.1" type="number" value="4"/>
+</div>
+<div aria-describedby="print-template-help" class="print-template-fields">
+<h3>Custom Template</h3>
+<p class="sr-only" id="print-template-help">Upload a PNG, JPG, SVG, or 8-bit RLE PSD print template. PSD files use their flattened composite image. Template size can define the exported canvas. Placement controls whether the template prints behind the art, above the art, or only appears as a non-exported preview guide.</p>
+<label class="file-upload-btn" for="print-template-input">Upload Template</label>
+<input accept="image/*,.svg,.psd,application/vnd.adobe.photoshop" aria-describedby="print-template-help" aria-label="Upload print template" class="hidden-file" id="print-template-input" type="file"/>
+<div aria-live="polite" class="control-hint" id="print-template-name" role="status">No template uploaded.</div>
+<label class="checkbox-label template-size-btn" for="print-template-size">
+<input aria-describedby="print-template-size-help" id="print-template-size" type="checkbox"/>
+<span aria-hidden="true" class="template-size-mark">↔</span>
+<span>Use template canvas size</span>
+<span class="sr-only" id="print-template-size-help">When checked, the export uses the uploaded template image dimensions instead of the selected print preset dimensions.</span>
+</label>
+<label for="print-template-placement">Template Placement</label>
+<select class="styled-select" id="print-template-placement">
+<option value="guide">Preview Guide Only</option>
+<option value="behind">Print Behind Art</option>
+<option value="over">Print Over Art</option>
+</select>
+<button aria-describedby="print-template-help" aria-label="Clear uploaded print template" id="clear-print-template-btn" type="button">Clear Template</button>
+</div>
+<div aria-live="polite" class="print-info" id="print-info">300 DPI export ready.</div>
+<canvas aria-label="Print production preview" height="220" id="print-preview" width="420"></canvas>
+<div class="button-row action-row print-actions">
+<button aria-describedby="print-preview-help" aria-haspopup="dialog" id="open-print-preview-btn" type="button">Large Preview</button>
+<button id="export-print-btn" type="button">Export Print PNG</button>
+<button hidden="" id="export-cutline-btn" type="button">Export Cutline SVG</button>
+</div>
+</section>
+</aside>
+<aside aria-label="Voxel paint mode" class="panel voxel-panel" hidden="">
+<section class="dock-card voxel-lab">
+<div class="voxel-mode-head">
+<div class="voxel-mode-title">
+<h2>Voxel Mode</h2>
+</div>
+<div aria-label="Voxel project actions" class="voxel-mode-head-actions">
+<div aria-label="Voxel edit history" class="voxel-head-group" role="group">
+<button id="voxel-mode-undo-btn" type="button">Undo</button>
+<button id="voxel-mode-redo-btn" type="button">Redo</button>
+</div>
+<div aria-label="Voxel import actions" class="voxel-head-group" role="group">
+<button aria-describedby="voxel-mode-import-preview-help" class="feature-btn" id="voxel-mode-import-preview-btn" type="button">Import Preview</button>
+<span class="sr-only" id="voxel-mode-import-preview-help">Import the current Base Mode voxel preview into Voxel Mode. Large canvases use the same simplified preview resolution shown by Voxel Preview to keep the model responsive.</span>
+<button id="voxel-mode-import-json-btn" type="button">Open JSON</button>
+</div>
+<details class="voxel-export-menu" id="voxel-mode-export-menu">
+<summary aria-describedby="voxel-export-menu-help">
+<span>Export</span>
+<span aria-hidden="true">▾</span>
+</summary>
+<div aria-label="Voxel export options" class="voxel-export-popover">
+<div aria-labelledby="voxel-export-image-title" class="voxel-export-section" role="group">
+<span class="voxel-export-section-title" id="voxel-export-image-title">Images</span>
+<button id="voxel-mode-export-png-btn" type="button">Preview PNG</button>
+<button aria-describedby="voxel-export-format-help" id="voxel-mode-export-transparent-btn" type="button">Transparent PNG</button>
+<button id="voxel-mode-export-spin-btn" type="button">Spin GIF</button>
+<button id="voxel-mode-export-animation-btn" type="button">Animation GIF</button>
+<button id="voxel-mode-export-animation-sheet-btn" type="button">Animation Sheet</button>
+</div>
+<div aria-labelledby="voxel-export-model-title" class="voxel-export-section" role="group">
+<span class="voxel-export-section-title" id="voxel-export-model-title">3D Models</span>
+<button aria-describedby="voxel-export-format-help" aria-label="Export GLB model" id="voxel-mode-export-glb-btn" type="button">GLB</button>
+<button aria-describedby="voxel-rigged-export-help" id="voxel-mode-export-rigged-glb-btn" type="button">Blender Script</button>
+<button aria-describedby="voxel-export-format-help" aria-label="Export VOX model" id="voxel-mode-export-vox-btn" type="button">VOX</button>
+<button aria-label="Export OBJ model" id="voxel-mode-export-obj-btn" type="button">OBJ</button>
+<button aria-describedby="voxel-export-format-help" aria-label="Export STL model" id="voxel-mode-export-stl-btn" type="button">STL</button>
+</div>
+<div aria-labelledby="voxel-export-data-title" class="voxel-export-section" role="group">
+<span class="voxel-export-section-title" id="voxel-export-data-title">Project Data</span>
+<button id="voxel-mode-export-json-btn" type="button">Voxel JSON</button>
+<button id="voxel-mode-export-animation-json-btn" type="button">Animation JSON</button>
+</div>
+</div>
+</details>
+<span class="sr-only" id="voxel-export-menu-help">Open all Voxel Mode image, animation, model, and project export options.</span>
+<span class="sr-only" id="voxel-export-format-help">GLB preserves vertex colors for game engines and 3D applications. VOX opens in compatible voxel editors. STL exports solid triangle geometry. Transparent PNG removes the preview background and guides.</span>
+<span class="sr-only" id="voxel-rigged-export-help">Blender Script exports one self-contained Python file that creates the colored voxel mesh, exact armature, vertex groups, and Armature modifier directly in Blender. Open it in Blender’s Scripting workspace and run it.</span>
+</div>
+</div>
+<div class="voxel-mode-layout rearrange-zone" data-zone="voxel">
+<nav aria-describedby="voxel-workspace-launcher-help" aria-label="Voxel tool workspaces" class="voxel-mode-card voxel-workspace-launcher">
+<span class="voxel-workspace-launcher-title">Tool Workspaces</span>
+<div class="voxel-workspace-launcher-buttons">
+<button aria-controls="voxel-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-voxel-workspace-open="modeling" id="voxel-workspace-modeling-btn" type="button">Modeling</button>
+<button aria-controls="voxel-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-voxel-workspace-open="settings" id="voxel-workspace-settings-btn" type="button">Controls</button>
+<button aria-controls="voxel-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-voxel-workspace-open="selection" id="voxel-workspace-selection-btn" type="button">Selection</button>
+<button aria-controls="voxel-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-voxel-workspace-open="modifiers" id="voxel-workspace-modifiers-btn" type="button">Modifiers</button>
+<button aria-controls="voxel-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-voxel-workspace-open="rigging" id="voxel-workspace-rigging-btn" type="button">Rigging</button>
+<button aria-controls="voxel-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-voxel-workspace-open="parts" id="voxel-workspace-parts-btn" type="button">Parts &amp; Rig</button>
+<button aria-controls="voxel-tool-workspace-overlay" aria-describedby="voxel-animation-launch-help" aria-expanded="false" aria-haspopup="dialog" data-voxel-workspace-open="animation" id="voxel-animation-open-btn" type="button">Animation</button>
+</div>
+<span class="sr-only" id="voxel-workspace-launcher-help">Open a focused Voxel Mode workspace. Each workspace uses the same live 3D model viewport and returns it here when closed.</span>
+<span class="sr-only" id="voxel-animation-launch-help">Opens the Voxel Animation workspace with the live 3D model, dope sheet, frame strip, playback controls, pose library, and animation settings.</span>
+</nav>
+<section aria-labelledby="voxel-slice-title" class="voxel-mode-card voxel-slice-card" data-dock-id="voxel-slice">
+<div class="voxel-mode-card-head">
+<div>
+<h3 id="voxel-slice-title">Front Canvas</h3>
+<p class="control-hint">Choose an edit plane and slice independently from the 3D camera.</p>
+</div>
+</div>
+<canvas aria-describedby="voxel-slice-keyboard-help" aria-label="Voxel slice paint canvas" height="640" id="voxel-paint-canvas" tabindex="0" width="640"></canvas>
+<p class="sr-only" id="voxel-slice-keyboard-help">Use bracket keys, Page Up, Page Down, or the mouse wheel to move one slice at a time. An empty slice does not remove the model from the 3D preview. Use B for paint, E for erase, I to pick color, and F to fill.</p>
+<div aria-live="polite" class="voxel-mode-info" id="voxel-mode-info">32 × 32 × 32 model, 0 cubes.</div>
+</section>
+<section aria-labelledby="voxel-preview-title" class="voxel-mode-card voxel-preview-card" data-dock-id="voxel-preview">
+<div class="voxel-mode-card-head voxel-preview-head">
+<div>
+<h3 id="voxel-preview-title">Live 3D Preview</h3>
+<p class="control-hint" id="voxel-mode-view-label">Canvas: Front</p>
+</div>
+<span aria-live="polite" class="voxel-active-badge" hidden="" id="voxel-mode-active-badge" role="status">Drawing Bones</span></div>
+<!-- Preview toolbar -->
+<div aria-label="Voxel 3D preview controls" class="voxel-preview-toolbar" role="toolbar">
+<div class="voxel-toolbar-block voxel-preset-block">
+<span class="voxel-toolbar-label" id="voxel-view-preset-label">View</span>
+<div aria-labelledby="voxel-view-preset-label" class="voxel-view-presets" role="group">
+<button aria-pressed="false" class="voxel-view-btn" data-voxel-camera="0" type="button">Front</button>
+<button aria-pressed="false" class="voxel-view-btn" data-voxel-camera="1" type="button">Right</button>
+<button aria-pressed="false" class="voxel-view-btn" data-voxel-camera="2" type="button">Back</button>
+<button aria-pressed="false" class="voxel-view-btn" data-voxel-camera="3" type="button">Left</button>
+<button aria-pressed="false" class="voxel-view-btn" data-voxel-camera="4" type="button">Top</button>
+<button aria-pressed="false" class="voxel-view-btn" data-voxel-camera="5" type="button">Bottom</button>
+<button aria-pressed="true" class="voxel-view-btn active" data-voxel-camera="6" type="button">Iso</button>
+</div>
+</div>
+<div class="voxel-toolbar-block voxel-camera-block">
+<span class="voxel-toolbar-label" id="voxel-camera-action-label">Camera</span>
+<div aria-labelledby="voxel-camera-action-label" class="voxel-camera-actions" role="group">
+<button aria-label="Orbit voxel camera left" id="voxel-mode-view-left-btn" type="button"><span aria-hidden="true">↶</span><span class="sr-only">Orbit left</span></button>
+<button aria-label="Orbit voxel camera right" id="voxel-mode-view-right-btn" type="button"><span aria-hidden="true">↷</span><span class="sr-only">Orbit right</span></button>
+<button id="voxel-mode-reset-camera-btn" type="button">Reset</button>
+<button id="voxel-mode-focus-selection-btn" type="button">Focus</button>
+<button aria-pressed="false" id="voxel-mode-turntable-btn" type="button">Turntable</button>
+</div>
+</div>
+<div aria-label="Voxel preview zoom controls" class="voxel-toolbar-block voxel-preview-zoom">
+<label class="voxel-toolbar-label" for="voxel-mode-zoom">Zoom</label>
+<button aria-label="Zoom voxel preview out" id="voxel-mode-zoom-out-btn" type="button">−</button>
+<input aria-describedby="voxel-mode-zoom-output" id="voxel-mode-zoom" max="500" min="35" step="5" type="range" value="100"/>
+<button aria-label="Zoom voxel preview in" id="voxel-mode-zoom-in-btn" type="button">+</button>
+<output for="voxel-mode-zoom" id="voxel-mode-zoom-output">100%</output>
+<button aria-label="Fit voxel model to preview" id="voxel-mode-zoom-fit-btn" type="button">Fit</button>
+</div>
+</div>
+<div class="voxel-mode-stage" id="voxel-mode-stage"><div aria-label="Camera orientation" class="voxel-orientation" role="group">
+<button aria-label="Front camera" data-voxel-camera="0" type="button">F</button>
+<button aria-label="Right camera" data-voxel-camera="1" type="button">R</button>
+<button aria-label="Top camera" data-voxel-camera="4" type="button">T</button>
+<button aria-label="Isometric camera" data-voxel-camera="6" type="button">I</button>
+</div><div aria-live="polite" class="voxel-bone-mode" hidden="" id="voxel-mode-bone-mode" role="status">
+<span aria-hidden="true" class="voxel-bone-mode-mark"></span>
+<span><strong id="voxel-mode-bone-mode-title">Drawing Bones</strong><span id="voxel-mode-bone-mode-hint">Click the model to place the first joint.</span></span>
+</div>
+<canvas aria-hidden="true" height="500" id="voxel-mode-webgl" width="640"></canvas>
+<canvas aria-describedby="voxel-preview-help voxel-mode-preview-status" aria-label="Interactive voxel model editor" height="500" id="voxel-mode-preview" tabindex="0" width="640"></canvas>
+</div>
+<div aria-label="Synchronized voxel reference views" class="voxel-multi-view" hidden="" id="voxel-mode-multi-view">
+<figure><canvas aria-label="Front voxel reference view" height="180" id="voxel-view-front" width="240"></canvas><figcaption>Front</figcaption></figure>
+<figure><canvas aria-label="Right voxel reference view" height="180" id="voxel-view-right" width="240"></canvas><figcaption>Right</figcaption></figure>
+<figure><canvas aria-label="Top voxel reference view" height="180" id="voxel-view-top" width="240"></canvas><figcaption>Top</figcaption></figure>
+<figure><canvas aria-label="Isometric voxel reference view" height="180" id="voxel-view-iso" width="240"></canvas><figcaption>Isometric</figcaption></figure>
+</div>
+<p class="control-hint" id="voxel-preview-help">Use the selected tool on the model. The mouse wheel zooms around the pointer. Drag empty space or hold Shift to orbit, middle-drag to pan, and right-click to erase. Draw Bones places joints directly in this view.</p>
+<p aria-live="polite" class="sr-only" id="voxel-mode-preview-status">Interactive voxel preview ready.</p>
+</section>
+<section class="voxel-mode-card voxel-tools-card" data-dock-id="voxel-tools" data-voxel-workspace-source="modeling" data-voxel-workspace-title="Modeling">
+<div class="voxel-tools-head">
+<h3>Modeling Tools</h3>
+<output aria-live="polite" class="voxel-tool-status" id="voxel-mode-tool-status">Paint</output></div>
+<div aria-label="Voxel tools" class="voxel-tool-groups">
+<div aria-labelledby="voxel-tool-draw-title" class="voxel-tool-group" role="group">
+<span class="voxel-tool-group-title" id="voxel-tool-draw-title">Draw</span>
+<div class="voxel-tool-row">
+<button aria-pressed="true" class="voxel-tool-btn active" data-voxel-tool="paint" type="button">Paint</button>
+<button aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="erase" type="button">Erase</button>
+<button aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="fill" type="button">Fill</button>
+<button aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="pick" type="button">Pick</button>
+</div>
+</div>
+<div aria-labelledby="voxel-tool-surface-title" class="voxel-tool-group" role="group">
+<span class="voxel-tool-group-title" id="voxel-tool-surface-title">Surface</span>
+<div class="voxel-tool-row">
+<button aria-label="Paint the color of visible voxel faces" aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="surface" type="button">Surface Paint</button>
+<button aria-label="Extend voxels from a visible face" aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="extrude" type="button">Extrude</button>
+<button aria-label="Replace a connected area with the selected color" aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="replace" type="button">Replace</button>
+</div>
+</div>
+<div aria-labelledby="voxel-tool-shape-title" class="voxel-tool-group" role="group">
+<span class="voxel-tool-group-title" id="voxel-tool-shape-title">Shape</span>
+<div class="voxel-tool-row">
+<button aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="select" type="button">Select</button>
+<button aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="box" type="button">Box</button>
+<button aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="line" type="button">Line</button>
+<button aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="sphere" type="button">Sphere</button>
+<button aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="cylinder" type="button">Cylinder</button>
+<button aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="origin" type="button">Set Origin</button>
+</div>
+</div>
+</div>
+</section><section aria-labelledby="voxel-settings-title" class="voxel-mode-card voxel-settings-card" data-dock-id="voxel-settings" data-voxel-workspace-source="settings" data-voxel-workspace-title="Controls">
+<div class="voxel-section-head">
+<h3 id="voxel-settings-title">Controls</h3>
+<div aria-label="Voxel controls" class="voxel-tab-list" role="tablist">
+<button aria-controls="voxel-settings-paint" aria-selected="true" data-voxel-tab-group="settings" data-voxel-tab-target="paint" id="voxel-settings-paint-tab" role="tab" type="button">Paint</button>
+<button aria-controls="voxel-settings-view" aria-selected="false" data-voxel-tab-group="settings" data-voxel-tab-target="view" id="voxel-settings-view-tab" role="tab" tabindex="-1" type="button">View</button>
+<button aria-controls="voxel-settings-slice" aria-selected="false" data-voxel-tab-group="settings" data-voxel-tab-target="slice" id="voxel-settings-slice-tab" role="tab" tabindex="-1" type="button">Slice</button>
+<button aria-controls="voxel-settings-model" aria-selected="false" data-voxel-tab-group="settings" data-voxel-tab-target="model" id="voxel-settings-model-tab" role="tab" tabindex="-1" type="button">Model</button>
+</div>
+</div>
+<div aria-labelledby="voxel-settings-paint-tab" class="voxel-tab-panel voxel-settings-grid" data-voxel-tab-panel="settings:paint" id="voxel-settings-paint" role="tabpanel"><div class="voxel-settings-group"><span class="voxel-panel-title">Color &amp; Material</span>
+<div class="voxel-inline-control">
+<label for="voxel-mode-color">Color</label>
+<input id="voxel-mode-color" type="color" value="#000000"/>
+</div>
+<div aria-label="Voxel color palette" class="palette voxel-mode-palette" id="voxel-mode-palette"></div>
+<label for="voxel-mode-material">Material</label>
+<select aria-describedby="voxel-material-help" class="styled-select" id="voxel-mode-material">
+<option value="matte">Matte</option>
+<option value="metal">Metal</option>
+<option value="glass">Glass</option>
+<option value="glow">Glow</option>
+<option value="unlit">Unlit</option>
+</select>
+<span class="sr-only" id="voxel-material-help">The selected material is stored on newly painted or recolored voxels and affects preview shading and GLB export.</span>
+</div><div class="voxel-settings-group"><span class="voxel-panel-title">Brush</span>
+<div class="voxel-inline-control">
+<label for="voxel-mode-brush-size">Brush Size</label>
+<output for="voxel-mode-brush-size" id="voxel-mode-brush-output">1 voxel</output>
+</div>
+<input id="voxel-mode-brush-size" max="6" min="1" step="1" type="range" value="1"/>
+<div class="voxel-inline-control voxel-depth-control">
+<label for="voxel-mode-brush-depth">Brush Depth</label>
+<output for="voxel-mode-brush-depth" id="voxel-mode-brush-depth-output">1 slice</output>
+</div>
+<input id="voxel-mode-brush-depth" max="12" min="1" step="1" type="range" value="1"/>
+<div class="voxel-origin-readout" id="voxel-mode-origin">Origin: X 16 · Y 16 · Z 16</div>
+<div class="button-row action-row voxel-origin-actions">
+<button id="voxel-mode-center-origin-btn" type="button">Center Origin</button>
+</div>
+<label class="check-row" for="voxel-mode-grid"><input checked="" id="voxel-mode-grid" type="checkbox"/> Show grid</label>
+</div><div class="voxel-settings-group"><span class="voxel-panel-title">Shapes</span>
+<label for="voxel-mode-shape-fill">Style</label>
+<select class="styled-select" id="voxel-mode-shape-fill"><option value="filled">Filled</option><option value="hollow">Hollow</option></select>
+<label for="voxel-mode-shape-wall">Wall</label>
+<input id="voxel-mode-shape-wall" max="8" min="1" step="1" type="number" value="1"/>
+<label for="voxel-mode-cylinder-axis">Cylinder Axis</label>
+<select class="styled-select" id="voxel-mode-cylinder-axis"><option value="x">X</option><option selected="" value="y">Y</option><option value="z">Z</option></select>
+<p class="control-hint">Drag on the slice to preview the shape.</p>
+</div></div>
+<div aria-labelledby="voxel-settings-view-tab" class="voxel-tab-panel" data-voxel-tab-panel="settings:view" hidden="" id="voxel-settings-view" role="tabpanel"><div class="voxel-settings-group voxel-settings-wide"><span class="voxel-panel-title" id="voxel-render-title">Rendering</span>
+<div class="voxel-render-grid">
+<div class="voxel-control-stack">
+<label for="voxel-mode-renderer">Renderer</label>
+<select aria-describedby="voxel-renderer-help" class="styled-select" id="voxel-mode-renderer">
+<option value="webgl">GPU</option>
+<option value="canvas">Canvas</option>
+</select>
+<span class="sr-only" id="voxel-renderer-help">GPU mode uses depth buffering when WebGL is available. Canvas mode uses the original preview renderer.</span>
+</div>
+<div class="voxel-control-stack">
+<label for="voxel-mode-projection">Projection</label>
+<select class="styled-select" id="voxel-mode-projection">
+<option value="orthographic">Orthographic</option>
+<option value="perspective">Perspective</option>
+</select>
+</div>
+<div class="voxel-control-stack">
+<label for="voxel-mode-lighting">Lighting</label>
+<select class="styled-select" id="voxel-mode-lighting">
+<option value="studio">Studio</option>
+<option value="sunset">Sunset</option>
+<option value="game">Game</option>
+<option value="unlit">Unlit</option>
+</select>
+</div>
+<div class="voxel-range-control">
+<div class="voxel-inline-control"><label for="voxel-mode-light-yaw">Light Yaw</label><output for="voxel-mode-light-yaw" id="voxel-mode-light-yaw-output">35°</output></div>
+<input aria-describedby="voxel-mode-light-yaw-output" id="voxel-mode-light-yaw" max="180" min="-180" step="1" type="range" value="35"/>
+</div>
+<div class="voxel-range-control">
+<div class="voxel-inline-control"><label for="voxel-mode-light-pitch">Light Pitch</label><output for="voxel-mode-light-pitch" id="voxel-mode-light-pitch-output">-45°</output></div>
+<input aria-describedby="voxel-mode-light-pitch-output" id="voxel-mode-light-pitch" max="89" min="-89" step="1" type="range" value="-45"/>
+</div>
+<div class="voxel-range-control">
+<div class="voxel-inline-control"><label for="voxel-mode-ambient">Ambient</label><output for="voxel-mode-ambient" id="voxel-mode-ambient-output">42%</output></div>
+<input aria-describedby="voxel-mode-ambient-output" id="voxel-mode-ambient" max="100" min="5" step="1" type="range" value="42"/>
+</div>
+<div class="voxel-render-toggles">
+<label class="check-row" for="voxel-mode-ao"><input checked="" id="voxel-mode-ao" type="checkbox"/> Ambient occlusion</label>
+<label class="check-row" for="voxel-mode-shadows"><input checked="" id="voxel-mode-shadows" type="checkbox"/> Floor shadow</label>
+<label class="check-row" for="voxel-mode-floor"><input checked="" id="voxel-mode-floor" type="checkbox"/> Ground plane</label>
+<label class="check-row" for="voxel-mode-fog"><input id="voxel-mode-fog" type="checkbox"/> Depth fog</label>
+<label class="check-row" for="voxel-mode-four-view"><input id="voxel-mode-four-view" type="checkbox"/> Four view workspace</label>
+<label class="check-row" for="voxel-mode-axes"><input checked="" id="voxel-mode-axes" type="checkbox"/> Show axes</label>
+</div>
+<div class="voxel-control-stack voxel-outline-control">
+<label for="voxel-mode-outline">Outlines</label>
+<select class="styled-select" id="voxel-mode-outline">
+<option value="all">Every voxel</option>
+<option value="soft">Soft edges</option>
+<option value="none">None</option>
+</select>
+</div>
+</div>
+<div class="voxel-settings-group voxel-camera-view-group"><span class="voxel-panel-title">Saved Views</span>
+<label for="voxel-mode-camera-view-name">Name</label>
+<input id="voxel-mode-camera-view-name" maxlength="24" placeholder="Camera view" type="text"/>
+<label for="voxel-mode-camera-view-select">View</label>
+<select class="styled-select" id="voxel-mode-camera-view-select"></select>
+<div class="button-row action-row"><button id="voxel-mode-camera-view-save-btn" type="button">Save</button><button id="voxel-mode-camera-view-load-btn" type="button">Load</button><button id="voxel-mode-camera-view-delete-btn" type="button">Delete</button></div>
+</div>
+</div></div>
+<div aria-labelledby="voxel-settings-slice-tab" class="voxel-tab-panel voxel-settings-grid" data-voxel-tab-panel="settings:slice" hidden="" id="voxel-settings-slice" role="tabpanel"><div class="voxel-settings-group"><span class="voxel-panel-title">Mirror</span>
+<label class="check-row" for="voxel-mode-mirror-x"><input id="voxel-mode-mirror-x" type="checkbox"/> Mirror X</label>
+<label class="check-row" for="voxel-mode-mirror-y"><input id="voxel-mode-mirror-y" type="checkbox"/> Mirror Y</label>
+<label class="check-row" for="voxel-mode-mirror-z"><input id="voxel-mode-mirror-z" type="checkbox"/> Mirror Z</label>
+<p class="control-hint">Mirrors use the current origin as the center line.</p>
+</div><div class="voxel-settings-group"><span class="voxel-panel-title">Slice</span>
+<div class="voxel-slice-grid">
+<label for="voxel-mode-plane">Plane</label>
+<select class="styled-select" id="voxel-mode-plane">
+<option value="xy">XY Front/Back</option>
+<option value="xz">XZ Top/Bottom</option>
+<option value="yz">YZ Side</option>
+</select>
+<label for="voxel-mode-slice">Slice</label>
+<div>
+<input id="voxel-mode-slice" max="31" min="0" step="1" type="range" value="16"/>
+<output for="voxel-mode-slice" id="voxel-mode-slice-output">Z 16</output>
+<div aria-label="Slice navigation" class="voxel-slice-actions">
+<button aria-label="Previous voxel slice" id="voxel-mode-slice-prev-btn" type="button">−</button>
+<button aria-label="Next voxel slice" id="voxel-mode-slice-next-btn" type="button">+</button>
+<button id="voxel-mode-slice-prev-filled-btn" type="button">Previous Filled</button>
+<button id="voxel-mode-slice-next-filled-btn" type="button">Next Filled</button>
+</div>
+</div>
+</div>
+<label class="check-row voxel-ghost-row" for="voxel-mode-ghost"><input aria-describedby="voxel-mode-nearby-slices-help" id="voxel-mode-ghost" type="checkbox"/> Show Nearby Slices</label>
+<span class="sr-only" id="voxel-mode-nearby-slices-help">Shows the slices above and below the current slice as faded guides.</span>
+</div></div>
+<div aria-labelledby="voxel-settings-model-tab" class="voxel-tab-panel" data-voxel-tab-panel="settings:model" hidden="" id="voxel-settings-model" role="tabpanel"><div class="voxel-settings-group voxel-settings-wide"><span class="voxel-panel-title">Model</span>
+<div class="voxel-dimension-grid">
+<div class="voxel-dimension-field">
+<label for="voxel-mode-width">W</label>
+<input aria-describedby="voxel-mode-dimension-help" id="voxel-mode-width" max="512" min="4" step="1" type="number" value="32"/>
+</div>
+<div class="voxel-dimension-field">
+<label for="voxel-mode-height">H</label>
+<input aria-describedby="voxel-mode-dimension-help" id="voxel-mode-height" max="512" min="4" step="1" type="number" value="32"/>
+</div>
+<div class="voxel-dimension-field">
+<label for="voxel-mode-depth">D</label>
+<input aria-describedby="voxel-mode-dimension-help" id="voxel-mode-depth" max="64" min="4" step="1" type="number" value="32"/>
+</div>
+</div>
+<span class="sr-only" id="voxel-mode-dimension-help">Width and height support up to 512. Depth supports up to 64.</span>
+<div class="button-row action-row voxel-mode-actions">
+<button id="voxel-mode-resize-btn" type="button">Resize</button>
+<button id="voxel-mode-clear-btn" type="button">Clear</button>
+<button id="voxel-mode-clean-btn" type="button">Hollow Interior</button>
+</div>
+<label class="check-row voxel-mode-import-bounds-row" for="voxel-mode-open-import-bounds"><input id="voxel-mode-open-import-bounds" type="checkbox"/> Open import bounds</label>
+<p class="control-hint voxel-mode-import-bounds-help">Keep the full Base Mode grid editable when you import a Voxel Preview.</p>
+<div class="button-row action-row voxel-mode-transfer-actions">
+<button class="feature-btn" id="voxel-mode-frame-to-slice-btn" type="button">Active Frame → Slice</button>
+<button class="feature-btn" id="voxel-mode-slice-to-frame-btn" type="button">Slice → New Frame</button>
+</div>
+</div></div>
+</section>
+<section class="voxel-mode-card voxel-selection-card" data-dock-id="voxel-selection" data-voxel-workspace-source="selection" data-voxel-workspace-title="Selection">
+<h3>Selection</h3><div aria-label="Selection controls" class="voxel-tab-list voxel-selection-tabs" role="tablist">
+<button aria-controls="voxel-selection-edit-panel" aria-selected="true" data-voxel-tab-group="selection" data-voxel-tab-target="edit" id="voxel-selection-edit-tab" role="tab" type="button">Edit</button>
+<button aria-controls="voxel-selection-transform-panel" aria-selected="false" data-voxel-tab-group="selection" data-voxel-tab-target="transform" id="voxel-selection-transform-tab" role="tab" tabindex="-1" type="button">Transform</button>
+<button aria-controls="voxel-selection-stamps-panel" aria-selected="false" data-voxel-tab-group="selection" data-voxel-tab-target="stamps" id="voxel-selection-stamps-tab" role="tab" tabindex="-1" type="button">Stamps</button>
+</div>
+<div class="voxel-selection-workspace">
+<div aria-labelledby="voxel-selection-edit-tab" class="voxel-selection-panel voxel-tab-panel" data-voxel-tab-panel="selection:edit" id="voxel-selection-edit-panel" role="tabpanel">
+<span class="voxel-panel-title" id="voxel-selection-edit-title">Edit</span>
+<div class="voxel-selection-info" id="voxel-mode-selection-info">No selection.</div>
+<div class="button-row action-row voxel-selection-actions">
+<button id="voxel-mode-copy-selection-btn" type="button">Copy</button>
+<button id="voxel-mode-paste-selection-btn" type="button">Paste</button>
+<button id="voxel-mode-duplicate-selection-btn" type="button">Duplicate</button>
+<button id="voxel-mode-delete-selection-btn" type="button">Delete</button>
+<button id="voxel-mode-recolor-selection-btn" type="button">Recolor</button>
+<button aria-describedby="voxel-mode-selection-actions-help" id="voxel-mode-select-all-btn" type="button">Select All</button>
+<button aria-describedby="voxel-mode-selection-actions-help" id="voxel-mode-clear-selection-btn" type="button">Deselect</button>
+</div>
+<span class="sr-only" id="voxel-mode-selection-actions-help">Select All selects every painted voxel in the model. Deselect clears only the voxel selection and does not delete artwork.</span>
+<div class="button-row action-row voxel-selection-query-actions">
+<button id="voxel-mode-select-connected-btn" type="button">Connected</button>
+<button id="voxel-mode-select-color-btn" type="button">Same Color</button>
+</div>
+<div aria-label="Move selected voxels" class="voxel-nudge-grid">
+<button aria-label="Move selection left" id="voxel-mode-nudge-col-neg-btn" type="button">←</button>
+<button aria-label="Move selection up" id="voxel-mode-nudge-row-neg-btn" type="button">↑</button>
+<button aria-label="Move selection right" id="voxel-mode-nudge-col-pos-btn" type="button">→</button>
+<button aria-label="Move selection down" id="voxel-mode-nudge-row-pos-btn" type="button">↓</button>
+<button id="voxel-mode-nudge-slice-neg-btn" type="button">Slice −</button>
+<button id="voxel-mode-nudge-slice-pos-btn" type="button">Slice +</button>
+</div>
+</div>
+<div aria-labelledby="voxel-selection-transform-tab" class="voxel-selection-panel voxel-tab-panel" data-voxel-tab-panel="selection:transform" hidden="" id="voxel-selection-transform-panel" role="tabpanel">
+<span class="voxel-panel-title" id="voxel-selection-transform-title">Transform</span>
+<div aria-label="Transform selected voxels" class="button-row action-row voxel-transform-actions">
+<button id="voxel-mode-flip-x-btn" type="button">Flip X</button>
+<button id="voxel-mode-flip-y-btn" type="button">Flip Y</button>
+<button id="voxel-mode-flip-z-btn" type="button">Flip Z</button>
+<button id="voxel-mode-rotate-selection-btn" type="button">Rotate 90</button>
+<button aria-label="Scale selected voxels up two times" id="voxel-mode-scale-up-btn" type="button">Scale 2×</button>
+<button aria-label="Scale selected voxels down one half" id="voxel-mode-scale-down-btn" type="button">Scale ½</button>
+</div>
+<div class="voxel-transform-options">
+<label for="voxel-mode-transform-pivot">Pivot</label><select class="styled-select" id="voxel-mode-transform-pivot"><option value="selection">Selection</option><option value="origin">Model Origin</option><option value="part">Part Pivot</option></select>
+<label for="voxel-mode-transform-snap">Move Snap</label><select class="styled-select" id="voxel-mode-transform-snap"><option value="1">1</option><option value="2">2</option><option value="4">4</option></select>
+</div>
+<div aria-label="Mirror copy selected voxels" class="button-row action-row voxel-mirror-copy-actions">
+<button id="voxel-mode-mirror-copy-x-btn" type="button">Mirror Copy X</button>
+<button id="voxel-mode-mirror-copy-y-btn" type="button">Mirror Copy Y</button>
+<button id="voxel-mode-mirror-copy-z-btn" type="button">Mirror Copy Z</button>
+</div>
+<div aria-label="Move selection by exact voxel amounts" class="voxel-transform-grid">
+<label for="voxel-mode-transform-x">X</label><input id="voxel-mode-transform-x" max="512" min="-512" step="1" type="number" value="0"/>
+<label for="voxel-mode-transform-y">Y</label><input id="voxel-mode-transform-y" max="512" min="-512" step="1" type="number" value="0"/>
+<label for="voxel-mode-transform-z">Z</label><input id="voxel-mode-transform-z" max="64" min="-64" step="1" type="number" value="0"/>
+<button id="voxel-mode-transform-apply-btn" type="button">Apply Move</button>
+</div>
+</div>
+<div aria-labelledby="voxel-selection-stamps-tab" class="voxel-selection-panel voxel-tab-panel" data-voxel-tab-panel="selection:stamps" hidden="" id="voxel-selection-stamps-panel" role="tabpanel">
+<span class="voxel-panel-title" id="voxel-selection-stamp-title">Stamps</span>
+<div class="voxel-stamp-grid">
+<label for="voxel-mode-stamp-name">Stamp Name</label>
+<input id="voxel-mode-stamp-name" maxlength="28" placeholder="Selection stamp" type="text"/>
+<label for="voxel-mode-stamp-select">Saved Stamp</label>
+<select class="styled-select" id="voxel-mode-stamp-select"></select>
+</div>
+<div class="button-row action-row voxel-stamp-actions">
+<button id="voxel-mode-save-stamp-btn" type="button">Save Stamp</button>
+<button id="voxel-mode-paste-stamp-btn" type="button">Paste Stamp</button>
+<button id="voxel-mode-delete-stamp-btn" type="button">Delete Stamp</button>
+</div>
+</div>
+</div>
+</section>
+<section aria-labelledby="voxel-modifier-title" class="voxel-mode-card voxel-modifier-card" data-dock-id="voxel-modifiers" data-voxel-workspace-source="modifiers" data-voxel-workspace-title="Modifiers">
+<h3 id="voxel-modifier-title">Modifiers</h3><div aria-label="Modifier controls" class="voxel-tab-list voxel-modifier-tabs" role="tablist">
+<button aria-controls="voxel-modifier-array-panel" aria-selected="true" data-voxel-tab-group="modifier" data-voxel-tab-target="array" id="voxel-modifier-array-tab" role="tab" type="button">Array</button>
+<button aria-controls="voxel-modifier-radial-panel" aria-selected="false" data-voxel-tab-group="modifier" data-voxel-tab-target="radial" id="voxel-modifier-radial-tab" role="tab" tabindex="-1" type="button">Radial</button>
+<button aria-controls="voxel-modifier-noise-panel" aria-selected="false" data-voxel-tab-group="modifier" data-voxel-tab-target="noise" id="voxel-modifier-noise-tab" role="tab" tabindex="-1" type="button">Noise</button>
+<button aria-controls="voxel-modifier-hollow-panel" aria-selected="false" data-voxel-tab-group="modifier" data-voxel-tab-target="hollow" id="voxel-modifier-hollow-tab" role="tab" tabindex="-1" type="button">Hollow</button>
+</div>
+<div class="voxel-modifier-groups">
+<div aria-labelledby="voxel-modifier-array-tab" class="voxel-modifier-group voxel-tab-panel" data-voxel-tab-panel="modifier:array" id="voxel-modifier-array-panel" role="tabpanel">
+<span class="voxel-panel-title" id="voxel-modifier-array-title">Array</span>
+<div class="voxel-modifier-fields">
+<div class="voxel-field-pair"><label for="voxel-mode-array-axis">Axis</label><select class="styled-select" id="voxel-mode-array-axis"><option value="x">X</option><option value="y">Y</option><option value="z">Z</option></select></div>
+<div class="voxel-field-pair"><label for="voxel-mode-array-count">Copies</label><input id="voxel-mode-array-count" max="12" min="2" step="1" type="number" value="2"/></div>
+<div class="voxel-field-pair"><label for="voxel-mode-array-spacing">Spacing</label><input id="voxel-mode-array-spacing" max="512" min="1" step="1" type="number" value="4"/></div>
+</div>
+<button id="voxel-mode-array-btn" type="button">Apply Array</button>
+</div>
+<div aria-labelledby="voxel-modifier-radial-tab" class="voxel-modifier-group voxel-tab-panel" data-voxel-tab-panel="modifier:radial" hidden="" id="voxel-modifier-radial-panel" role="tabpanel">
+<span class="voxel-panel-title" id="voxel-modifier-radial-title">Radial</span>
+<div class="voxel-modifier-fields">
+<div class="voxel-field-pair"><label for="voxel-mode-radial-count">Copies</label><input id="voxel-mode-radial-count" max="16" min="2" step="1" type="number" value="4"/></div>
+</div>
+<button id="voxel-mode-radial-btn" type="button">Apply Radial</button>
+</div>
+<div aria-labelledby="voxel-modifier-noise-tab" class="voxel-modifier-group voxel-tab-panel" data-voxel-tab-panel="modifier:noise" hidden="" id="voxel-modifier-noise-panel" role="tabpanel">
+<span class="voxel-panel-title" id="voxel-modifier-noise-title">Noise</span>
+<div class="voxel-modifier-fields">
+<div class="voxel-field-pair"><label for="voxel-mode-noise-amount">Amount</label><input aria-label="Noise amount" id="voxel-mode-noise-amount" max="100" min="1" step="1" type="range" value="15"/></div>
+</div>
+<button id="voxel-mode-noise-btn" type="button">Apply Noise</button>
+</div>
+<div aria-labelledby="voxel-modifier-hollow-tab" class="voxel-modifier-group voxel-tab-panel" data-voxel-tab-panel="modifier:hollow" hidden="" id="voxel-modifier-hollow-panel" role="tabpanel">
+<span class="voxel-panel-title" id="voxel-modifier-hollow-title">Hollow</span>
+<div class="voxel-modifier-fields">
+<div class="voxel-field-pair"><label for="voxel-mode-hollow-thickness">Wall</label><input id="voxel-mode-hollow-thickness" max="8" min="1" step="1" type="number" value="1"/></div>
+</div>
+<button id="voxel-mode-hollow-btn" type="button">Hollow Model</button>
+</div>
+</div>
+<p class="control-hint">Modifiers use the selection when one is active. Otherwise, they use the full model. You can undo each change.</p>
+</section>
+<section aria-labelledby="voxel-rig-title" class="voxel-mode-card voxel-rig-card" data-dock-id="voxel-rig" data-voxel-workspace-source="parts" data-voxel-workspace-title="Parts &amp; Rig">
+<div class="voxel-rig-head">
+<div>
+<h3 id="voxel-rig-title">Parts &amp; Rig</h3>
+<p class="control-hint">Create parts, draw bones in the 3D view, assign voxels, set pivots, and export a self-contained Blender scene script.</p>
+</div>
+<output aria-live="polite" class="voxel-rig-count" id="voxel-mode-rig-info">1 part</output>
+</div>
+<div aria-label="Parts and rig controls" class="voxel-tab-list voxel-rig-tabs" role="tablist">
+<button aria-controls="voxel-rig-parts-panel" aria-selected="true" data-voxel-tab-group="rig" data-voxel-tab-target="parts" id="voxel-rig-parts-tab" role="tab" type="button">Parts</button>
+<button aria-controls="voxel-rig-bones-panel" aria-selected="false" data-voxel-tab-group="rig" data-voxel-tab-target="bones" id="voxel-rig-bones-tab" role="tab" tabindex="-1" type="button">Armature</button>
+<button aria-controls="voxel-rig-pose-panel" aria-selected="false" data-voxel-tab-group="rig" data-voxel-tab-target="pose" id="voxel-rig-pose-tab" role="tab" tabindex="-1" type="button">Pose</button>
+</div><div class="voxel-rig-workspace">
+<div aria-labelledby="voxel-rig-parts-tab" class="voxel-rig-browser voxel-tab-panel" data-voxel-tab-panel="rig:parts" id="voxel-rig-parts-panel" role="tabpanel">
+<span class="voxel-panel-title">Parts</span>
+<div aria-describedby="voxel-part-list-help" aria-label="Voxel model parts" class="voxel-part-list" id="voxel-mode-part-list" role="listbox" tabindex="0"></div>
+<span class="sr-only" id="voxel-part-list-help">Choose a model part. Use the arrow keys to move through parts.</span>
+<div class="button-row action-row voxel-part-create-actions">
+<button id="voxel-mode-part-add-btn" type="button">Add Part</button>
+<button id="voxel-mode-part-from-selection-btn" type="button">From Selection</button>
+<button id="voxel-mode-part-duplicate-btn" type="button">Duplicate</button>
+<button id="voxel-mode-part-delete-btn" type="button">Delete</button>
+</div>
+<div class="button-row action-row voxel-part-selection-actions">
+<button id="voxel-mode-part-assign-btn" type="button">Assign Selection</button>
+<button id="voxel-mode-part-select-btn" type="button">Select Voxels</button>
+<button aria-pressed="false" id="voxel-mode-part-solo-btn" type="button">Solo</button>
+</div>
+</div>
+<div aria-labelledby="voxel-rig-bones-tab" class="voxel-bone-editor voxel-tab-panel" data-voxel-tab-panel="rig:bones" hidden="" id="voxel-rig-bones-panel" role="tabpanel">
+<span class="voxel-panel-title">Armature</span>
+<div class="voxel-bone-fields">
+<label for="voxel-mode-bone-name">Name</label>
+<input aria-describedby="voxel-bone-draw-help" id="voxel-mode-bone-name" maxlength="24" type="text" value="Bone"/>
+<label for="voxel-mode-bone-roll">Roll</label>
+<input aria-label="Selected bone roll in degrees" id="voxel-mode-bone-roll" max="360" min="-360" step="1" type="number" value="0"/>
+<label for="voxel-mode-blender-geometry">Geometry</label>
+<select aria-describedby="voxel-blender-geometry-help" class="styled-select" id="voxel-mode-blender-geometry">
+<option value="cubes">Individual Cubes</option>
+<option selected="" value="surface">Exposed Surface</option>
+</select>
+</div>
+<div class="voxel-joint-editor" id="voxel-mode-joint-editor">
+<div class="voxel-joint-fields">
+<label for="voxel-mode-joint-x">Joint X</label>
+<input aria-describedby="voxel-bone-edit-help" id="voxel-mode-joint-x" min="-1" step="0.25" type="number" value="0"/>
+<label for="voxel-mode-joint-y">Y</label>
+<input aria-describedby="voxel-bone-edit-help" id="voxel-mode-joint-y" min="-1" step="0.25" type="number" value="0"/>
+<label for="voxel-mode-joint-z">Z</label>
+<input aria-describedby="voxel-bone-edit-help" id="voxel-mode-joint-z" min="-1" step="0.25" type="number" value="0"/>
+<label for="voxel-mode-bone-move-axis">Move</label>
+<select class="styled-select" id="voxel-mode-bone-move-axis">
+<option selected="" value="view">View Plane</option>
+<option value="x">X Axis</option>
+<option value="y">Y Axis</option>
+<option value="z">Z Axis</option>
+</select>
+<label for="voxel-mode-bone-snap">Snap</label>
+<select class="styled-select" id="voxel-mode-bone-snap">
+<option selected="" value="none">None</option>
+<option value="grid">Voxel Grid</option>
+<option value="center">Voxel Centers</option>
+</select>
+<label for="voxel-mode-bone-parent">Parent</label>
+<select aria-describedby="voxel-bone-edit-help" class="styled-select" id="voxel-mode-bone-parent"></select>
+</div>
+<div class="voxel-bone-edit-actions">
+<button aria-describedby="voxel-bone-add-help" id="voxel-mode-bone-add-btn" type="button">Add Bone</button>
+<button aria-describedby="voxel-bone-edit-help" id="voxel-mode-bone-extrude-btn" type="button">Extrude</button>
+<button aria-describedby="voxel-bone-edit-help" id="voxel-mode-bone-insert-btn" type="button">Insert Joint</button>
+<button aria-describedby="voxel-bone-edit-help" id="voxel-mode-bone-dissolve-btn" type="button">Dissolve</button>
+</div>
+<output aria-live="polite" class="voxel-joint-status" id="voxel-mode-joint-status">Select a bone point to edit it.</output>
+</div>
+<div aria-describedby="voxel-bone-list-help" aria-label="Armature bones" class="voxel-bone-list" id="voxel-mode-bone-list" role="listbox" tabindex="0"></div>
+<span class="sr-only" id="voxel-bone-list-help">Choose a bone for binding and export settings. Use the arrow keys to move through bones.</span>
+<div class="voxel-bone-toggles">
+<label><input checked="" id="voxel-mode-bone-bind" type="checkbox"/> Bind Nearby Voxels</label>
+<label><input checked="" id="voxel-mode-bone-centers" type="checkbox"/> Use Voxel Centers</label>
+<label><input checked="" id="voxel-mode-bone-deform" type="checkbox"/> Deform</label>
+</div>
+<output aria-live="polite" class="voxel-armature-summary" id="voxel-mode-armature-summary">0 bones · click two endpoints for Bone 1</output>
+<div class="voxel-armature-actions">
+<button aria-describedby="voxel-armature-tools-help" id="voxel-mode-bind-nearest-btn" type="button">Auto Bind</button>
+<button aria-describedby="voxel-armature-tools-help" aria-pressed="false" id="voxel-mode-bind-paint-btn" type="button">Paint Bind</button>
+<button aria-describedby="voxel-armature-tools-help" id="voxel-mode-validate-rig-btn" type="button">Check Rig</button>
+<button aria-describedby="voxel-armature-tools-help" id="voxel-mode-export-armature-btn" type="button">Export Blender Script</button>
+</div>
+<output aria-live="polite" class="voxel-bone-status" id="voxel-mode-bone-status">Draw Bones is off.</output>
+<span class="sr-only" id="voxel-bone-draw-help">Turn on Draw Bones. For a new armature, click Bone 1 head and then its tail. To extend an armature, click an existing bone endpoint and then click the new endpoint. Press Escape or Finish Chain to end the chain.</span>
+<span class="sr-only" id="voxel-bone-add-help">Add Bone creates a child from the selected bone. Extrude uses the selected bone endpoint and lets you click the new endpoint in the 3D view.</span>
+<span class="sr-only" id="voxel-bone-edit-help">Edit Joints changes the rest armature. The Name field renames the selected bone. Click and drag a joint, use exact coordinates, or insert, extrude, dissolve, and reparent bones.</span>
+<span class="sr-only" id="voxel-blender-geometry-help">Individual Cubes keeps every voxel face. Exposed Surface removes hidden internal faces for a smaller Blender scene while retaining bone boundaries.</span>
+<span class="sr-only" id="voxel-armature-tools-help">Auto Bind assigns unlocked voxels to the nearest bone segment. Paint Bind assigns voxels in the 3D view. Check Rig reports export problems.</span>
+<span class="sr-only" id="voxel-influence-radius-help">Influence Radius controls how far this bone reaches when Smooth Bend calculates automatic weights. The selected bone displays an influence envelope in the 3D view.</span>
+<span class="sr-only" id="voxel-weight-paint-help">Weight Paint changes how strongly the selected bone deforms existing voxels and never creates or erases voxels. Draw and select a bone first. Weight is the maximum influence and Strength scales the influence painted by the stroke, so 100 percent Weight with 50 percent Strength paints 50 percent bone influence. Right drag clears painted weights back to automatic influence. Brush is the voxel radius.</span>
+</div>
+<div aria-labelledby="voxel-rig-pose-tab" class="voxel-rig-editor voxel-tab-panel" data-voxel-tab-panel="rig:pose" hidden="" id="voxel-rig-pose-panel" role="tabpanel">
+<span class="voxel-panel-title">Part Settings</span>
+<div class="voxel-rig-fields">
+<label for="voxel-mode-part-name">Name</label>
+<input id="voxel-mode-part-name" maxlength="32" type="text" value="Root"/>
+<label for="voxel-mode-part-parent">Parent</label>
+<select aria-label="Parent part" class="styled-select" id="voxel-mode-part-parent"><option value="">None</option></select>
+</div>
+<div class="voxel-rig-toggles">
+<label><input checked="" id="voxel-mode-part-visible" type="checkbox"/> Visible</label>
+<label><input id="voxel-mode-part-locked" type="checkbox"/> Locked</label>
+<div class="voxel-part-opacity"><label for="voxel-mode-part-opacity">Opacity</label><input aria-label="Part opacity" id="voxel-mode-part-opacity" max="100" min="10" step="5" type="range" value="100"/><output for="voxel-mode-part-opacity" id="voxel-mode-part-opacity-output">100%</output></div>
+<label><input checked="" id="voxel-mode-rig-show" type="checkbox"/> Show Armature</label>
+<label><input checked="" id="voxel-mode-rig-preview" type="checkbox"/> Preview Pose</label>
+</div>
+<div class="voxel-rig-fields voxel-deformation-fields">
+<label for="voxel-mode-deformation">Deformation</label>
+<select aria-describedby="voxel-deformation-help" class="styled-select" id="voxel-mode-deformation">
+<option value="smooth">Smooth Bend</option>
+<option value="rigid">Rigid Cubes</option>
+</select>
+</div>
+<span class="sr-only" id="voxel-deformation-help">Smooth Bend uses automatic envelope weights across connected bones and keeps internal surfaces joined. Rigid Cubes assigns every voxel vertex to one bone.</span>
+<div aria-describedby="voxel-bone-pose-help" aria-label="Part pivot and bone pose controls" class="voxel-rig-transform-grid">
+<span class="voxel-rig-transform-title">Transform</span><span>X</span><span>Y</span><span>Z</span>
+<label for="voxel-mode-part-pivot-x">Pivot</label>
+<input aria-label="Part pivot X" id="voxel-mode-part-pivot-x" max="512" min="0" step="0.5" type="number" value="16"/>
+<input aria-label="Part pivot Y" id="voxel-mode-part-pivot-y" max="512" min="0" step="0.5" type="number" value="16"/>
+<input aria-label="Part pivot Z" id="voxel-mode-part-pivot-z" max="64" min="0" step="0.5" type="number" value="16"/>
+<label for="voxel-mode-part-move-x">Move</label>
+<input aria-label="Part pose move X" id="voxel-mode-part-move-x" max="512" min="-512" step="0.25" type="number" value="0"/>
+<input aria-label="Part pose move Y" id="voxel-mode-part-move-y" max="512" min="-512" step="0.25" type="number" value="0"/>
+<input aria-label="Part pose move Z" id="voxel-mode-part-move-z" max="64" min="-64" step="0.25" type="number" value="0"/>
+<label for="voxel-mode-part-rotate-x">Rotate</label>
+<input aria-label="Part pose rotation X in degrees" id="voxel-mode-part-rotate-x" max="180" min="-180" step="1" type="number" value="0"/>
+<input aria-label="Part pose rotation Y in degrees" id="voxel-mode-part-rotate-y" max="180" min="-180" step="1" type="number" value="0"/>
+<input aria-label="Part pose rotation Z in degrees" id="voxel-mode-part-rotate-z" max="180" min="-180" step="1" type="number" value="0"/>
+<label for="voxel-mode-part-scale-x">Scale</label>
+<input aria-label="Part pose scale X" id="voxel-mode-part-scale-x" max="4" min="0.1" step="0.05" type="number" value="1"/>
+<input aria-label="Part pose scale Y" id="voxel-mode-part-scale-y" max="4" min="0.1" step="0.05" type="number" value="1"/>
+<input aria-label="Part pose scale Z" id="voxel-mode-part-scale-z" max="4" min="0.1" step="0.05" type="number" value="1"/>
+</div>
+<div class="button-row action-row voxel-rig-actions">
+<button id="voxel-mode-part-pivot-selection-btn" type="button">Pivot to Selection</button>
+<button aria-describedby="voxel-bone-pose-help" id="voxel-mode-part-reset-pose-btn" type="button">Reset Pose</button>
+</div>
+<span class="sr-only" id="voxel-bone-pose-help">Pose transforms move every voxel bound to the selected bone. Child bones inherit parent movement. These controls do not change the rest armature.</span>
+</div>
+</div>
+</section>
+<section aria-labelledby="voxel-rigging-workspace-title" class="voxel-mode-card voxel-rigging-workspace-card" data-voxel-workspace-source="rigging" data-voxel-workspace-title="Rigging">
+<h3 id="voxel-rigging-workspace-title">Rigging</h3>
+<!-- Rigging rail -->
+<div aria-labelledby="voxel-tool-rig-title" class="voxel-tool-group voxel-rig-tool-group" role="group">
+<span class="voxel-tool-group-title" id="voxel-tool-rig-title">Rigging</span>
+<div class="voxel-tool-row voxel-rig-tool-row">
+<button aria-describedby="voxel-bone-select-help" aria-pressed="false" class="voxel-tool-btn" data-voxel-tool="bone-select" type="button">Bone Select</button>
+<button aria-describedby="voxel-bone-draw-help" aria-pressed="false" id="voxel-mode-bone-draw-btn" type="button">Draw Bones</button>
+<button aria-describedby="voxel-bone-edit-help" aria-pressed="false" id="voxel-mode-bone-edit-btn" type="button">Edit Joints</button>
+<button disabled="" id="voxel-mode-bone-finish-btn" type="button">Finish Chain</button>
+<button aria-describedby="voxel-weight-paint-help" aria-pressed="false" id="voxel-mode-weight-paint-btn" type="button">Weight Paint</button>
+<button aria-describedby="voxel-weight-paint-help" id="voxel-mode-weight-clear-btn" type="button">Clear Painted</button>
+<label class="voxel-tool-toggle"><input id="voxel-mode-binding-view" type="checkbox"/> Weight View</label>
+</div>
+<div class="voxel-weight-tool-controls">
+<label for="voxel-mode-bone-radius">Influence Radius</label>
+<input aria-describedby="voxel-influence-radius-help" aria-label="Bone influence radius" id="voxel-mode-bone-radius" max="12" min="0.25" step="0.25" type="number" value="1.5"/>
+<span class="voxel-weight-unit">voxels</span>
+<label for="voxel-mode-weight-value">Weight</label>
+<input aria-describedby="voxel-weight-paint-help" id="voxel-mode-weight-value" max="100" min="0" step="5" type="range" value="100"/>
+<output for="voxel-mode-weight-value" id="voxel-mode-weight-value-output">100%</output>
+<label for="voxel-mode-weight-strength">Strength</label>
+<input aria-describedby="voxel-weight-paint-help" id="voxel-mode-weight-strength" max="100" min="5" step="5" type="range" value="50"/>
+<output for="voxel-mode-weight-strength" id="voxel-mode-weight-strength-output">50%</output>
+<label for="voxel-mode-weight-brush">Brush</label>
+<input aria-describedby="voxel-weight-paint-help" id="voxel-mode-weight-brush" max="8" min="1" step="1" type="number" value="1"/>
+</div>
+<span class="sr-only" id="voxel-bone-select-help">Bone Select lets you click a bone segment between joints or click a joint to select its connected bone without moving the armature. Shift drag empty space to orbit.</span>
+</div>
+<!-- Quick pose -->
+<div aria-labelledby="voxel-quick-pose-title" class="voxel-quick-pose" role="group">
+<div class="voxel-quick-pose-head">
+<span class="voxel-quick-pose-title" id="voxel-quick-pose-title">Quick Pose</span>
+<label class="sr-only" for="voxel-mode-quick-pose-bone">Bone</label>
+<select aria-describedby="voxel-quick-pose-help voxel-mode-quick-pose-status" class="styled-select" id="voxel-mode-quick-pose-bone"></select>
+<label class="sr-only" for="voxel-mode-quick-pose-axis">Rotation axis</label>
+<select aria-label="Quick pose rotation axis" class="styled-select voxel-quick-pose-axis" id="voxel-mode-quick-pose-axis">
+<option value="x">X</option>
+<option value="y">Y</option>
+<option value="z">Z</option>
+</select>
+</div>
+<div class="voxel-quick-pose-controls">
+<button aria-label="Rotate selected bone negative fifteen degrees" id="voxel-mode-quick-pose-minus" type="button">−15°</button>
+<input aria-describedby="voxel-mode-quick-pose-output voxel-quick-pose-help" aria-label="Selected bone rotation" id="voxel-mode-quick-pose-rotation" max="180" min="-180" step="1" type="range" value="0"/>
+<output aria-live="polite" for="voxel-mode-quick-pose-rotation" id="voxel-mode-quick-pose-output">0°</output>
+<button aria-label="Rotate selected bone positive fifteen degrees" id="voxel-mode-quick-pose-plus" type="button">+15°</button>
+<button aria-describedby="voxel-quick-pose-help" id="voxel-mode-quick-pose-reset" type="button">Reset</button>
+</div>
+<output aria-live="polite" class="voxel-quick-pose-status" id="voxel-mode-quick-pose-status">Root · 0 voxels</output>
+<span class="sr-only" id="voxel-quick-pose-help">Choose a bone and local axis, then use the rotation control, the fifteen degree buttons, or drag the highlighted bone in the viewport. Smooth Bend keeps connected surfaces together with automatic envelope weights while Rigid Cubes keeps each voxel solid.</span>
+</div>
+</section>
+
+<section aria-labelledby="voxel-animation-title" class="voxel-mode-card voxel-animation-card" data-dock-id="voxel-animation" data-voxel-workspace-source="animation" data-voxel-workspace-title="Animation">
+<div class="voxel-animation-head"><div><h3 id="voxel-animation-title">Animation</h3><p class="control-hint">Edit geometry and armature poses on the dope sheet while the live 3D model stays beside the timeline.</p></div><output aria-live="polite" class="voxel-animation-frame-count" id="voxel-mode-frame-output">Frame 0 of 0</output></div>
+<div class="voxel-selection-info" id="voxel-mode-animation-info">No animation frames yet.</div>
+<div class="voxel-animation-editor-grid">
+<section aria-labelledby="voxel-dopesheet-title" class="voxel-animation-main">
+<div class="voxel-animation-main-head"><div><span class="voxel-panel-title" id="voxel-dopesheet-title">Dope Sheet</span><span class="control-hint">Key rows show geometry and pose data stored on each frame.</span></div>
+<div aria-label="Animation playback controls" class="voxel-animation-transport" role="group">
+<button aria-label="First animation frame" id="voxel-mode-frame-first-btn" type="button">|←</button>
+<button aria-label="Previous animation frame" id="voxel-mode-frame-prev-btn" type="button">←</button>
+<button aria-label="Play animation" aria-pressed="false" class="voxel-animation-play" id="voxel-mode-preview-animation-btn" type="button">Play</button>
+<button aria-label="Next animation frame" id="voxel-mode-frame-next-btn" type="button">→</button>
+<button aria-label="Last animation frame" id="voxel-mode-frame-last-btn" type="button">→|</button>
+</div></div>
+<div class="voxel-dopesheet-shell"><div aria-hidden="true" class="voxel-dopesheet-channels"><span>Frame</span><strong>Voxels</strong><strong>Pose</strong><span>Time</span></div><div aria-describedby="voxel-dopesheet-help" aria-label="Voxel animation dope sheet" class="voxel-animation-dopesheet" id="voxel-animation-dopesheet" role="grid"></div></div>
+<span class="sr-only" id="voxel-dopesheet-help">Each column is one animation frame. The Voxels row marks stored voxel geometry and the Pose row marks stored armature posing. Select a column to edit that frame.</span>
+<div class="voxel-animation-strip-head"><span class="voxel-panel-title">Frame Strip</span><span class="control-hint">Thumbnail view of the same animation.</span></div>
+<div aria-describedby="voxel-animation-timeline-help" aria-label="Animation frames" class="voxel-animation-timeline" id="voxel-mode-timeline" role="listbox" tabindex="0"></div>
+<span class="sr-only" id="voxel-animation-timeline-help">Choose a frame to edit. Use the arrow keys to move through frames, Home and End to jump, Delete to remove the selected frame, and Space to play or stop.</span>
+</section>
+<aside aria-label="Animation controls" class="voxel-animation-inspector">
+<section class="voxel-animation-inspector-panel"><span class="voxel-panel-title">Frame</span>
+<div class="button-row action-row voxel-animation-frame-actions">
+<button id="voxel-mode-frame-add-btn" type="button">Add Frame</button><button id="voxel-mode-frame-duplicate-btn" type="button">Duplicate</button><button aria-describedby="voxel-animation-pose-help" id="voxel-mode-frame-capture-btn" type="button">Capture Now</button><button id="voxel-mode-frame-delete-btn" type="button">Delete</button><button aria-label="Move selected voxel frame earlier" id="voxel-mode-frame-left-btn" type="button">Move Left</button><button aria-label="Move selected voxel frame later" id="voxel-mode-frame-right-btn" type="button">Move Right</button><button id="voxel-mode-reverse-animation-btn" type="button">Reverse</button>
+</div><span class="sr-only" id="voxel-animation-pose-help">Capture Now stores both voxel geometry and the current armature pose for this frame.</span></section>
+<section class="voxel-animation-inspector-panel"><span class="voxel-panel-title">Timing</span>
+<div aria-label="Animation settings" class="voxel-animation-settings">
+<label for="voxel-mode-frame-duration">Frame Time</label><div class="voxel-animation-duration-row"><input aria-label="Current voxel frame duration in milliseconds" id="voxel-mode-frame-duration" max="2000" min="40" step="10" type="number" value="120"/><span aria-hidden="true">ms</span><button id="voxel-mode-duration-all-btn" type="button">Apply All</button></div>
+<label for="voxel-mode-animation-loop">Playback</label><select aria-label="Animation playback mode" class="styled-select" id="voxel-mode-animation-loop"><option value="loop">Loop</option><option value="pingpong">Ping-Pong</option><option value="once">Play Once</option></select>
+<label for="voxel-mode-animation-interpolation">Pose Motion</label><select class="styled-select" id="voxel-mode-animation-interpolation"><option value="step">Stepped</option><option value="linear">Smooth</option></select>
+<label for="voxel-mode-animation-speed">Preview Speed</label><select aria-label="Animation preview speed" class="styled-select" id="voxel-mode-animation-speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option selected="" value="1">1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="4">4×</option></select>
+<label for="voxel-mode-animation-export-scale">Export Size</label><select aria-label="Animation export size" class="styled-select" id="voxel-mode-animation-export-scale"><option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option></select>
+</div></section>
+<section class="voxel-animation-inspector-panel"><span class="voxel-panel-title">Ghosting</span>
+<div class="voxel-animation-toggles"><label><input aria-describedby="voxel-mode-animation-onion-help" id="voxel-mode-animation-onion" type="checkbox"/> Onion Skinning</label><label><input checked="" id="voxel-mode-animation-auto-capture" type="checkbox"/> Auto Capture</label></div>
+<div class="voxel-animation-onion-row"><label for="voxel-mode-animation-onion-opacity">Opacity</label><input aria-label="Onion skinning opacity" id="voxel-mode-animation-onion-opacity" max="80" min="10" step="5" type="range" value="35"/><output id="voxel-mode-animation-onion-output">35%</output></div>
+<div aria-hidden="true" class="voxel-animation-onion-legend"><span class="is-previous">Previous Frame</span><span class="is-next">Next Frame</span></div><span class="sr-only" id="voxel-mode-animation-onion-help">Shows the previous and next frames as faded guides while you edit.</span></section>
+<section class="voxel-animation-inspector-panel"><span class="voxel-panel-title">Pose Library</span>
+<div class="voxel-pose-library"><label for="voxel-mode-pose-name">Pose Name</label><input id="voxel-mode-pose-name" maxlength="28" placeholder="Pose" type="text"/><label for="voxel-mode-pose-select">Saved Pose</label><select class="styled-select" id="voxel-mode-pose-select"></select><div class="button-row action-row"><button id="voxel-mode-pose-save-btn" type="button">Save Pose</button><button id="voxel-mode-pose-apply-btn" type="button">Apply</button><button id="voxel-mode-pose-delete-btn" type="button">Delete</button></div><div class="button-row action-row"><button id="voxel-mode-pose-copy-btn" type="button">Copy Pose</button><button id="voxel-mode-pose-paste-btn" type="button">Paste Pose</button><button id="voxel-mode-pose-mirror-btn" type="button">Mirror Pose</button></div></div></section>
+<section class="voxel-animation-inspector-panel"><span class="voxel-panel-title">Project</span><div class="button-row action-row voxel-animation-project-actions"><button id="voxel-mode-import-animation-btn" type="button">Import Base Frames</button><button id="voxel-mode-clear-animation-btn" type="button">Clear Animation</button></div></section>
+</aside>
+</div>
+</section>
+</div>
+<div aria-live="polite" class="status-box voxel-status" id="voxel-mode-status">Voxel Mode ready.</div>
+</section>
+</aside>
+<div class="modal-overlay voxel-workspace-overlay" data-active-workspace="" hidden="" id="voxel-tool-workspace-overlay">
+<section aria-describedby="voxel-tool-workspace-help" aria-labelledby="voxel-tool-workspace-title" aria-modal="true" class="modal-card voxel-workspace-dialog" role="dialog" tabindex="-1">
+<div class="modal-head voxel-workspace-head">
+<div><span class="play-mode-eyebrow">Voxel Mode</span><h2 id="voxel-tool-workspace-title">Tool Workspace</h2></div>
+<div class="voxel-workspace-head-actions" role="group" aria-label="Voxel workspace history and close actions">
+<button aria-label="Undo Voxel workspace edit" id="voxel-workspace-undo-btn" type="button">Undo</button>
+<button aria-label="Redo Voxel workspace edit" id="voxel-workspace-redo-btn" type="button">Redo</button>
+<button aria-label="Close Voxel tool workspace" id="voxel-workspace-close-btn" type="button">Close</button>
+</div>
+</div>
+<p class="control-hint" id="voxel-tool-workspace-help">The live 3D model is shared with the main Voxel workspace. Changes made here appear immediately when you close this view.</p>
+<div aria-label="Switch Voxel tool workspace" class="voxel-workspace-switcher" role="toolbar">
+<button aria-pressed="false" data-voxel-workspace-switch="modeling" type="button">Modeling</button><button aria-pressed="false" data-voxel-workspace-switch="settings" type="button">Controls</button><button aria-pressed="false" data-voxel-workspace-switch="selection" type="button">Selection</button><button aria-pressed="false" data-voxel-workspace-switch="modifiers" type="button">Modifiers</button><button aria-pressed="false" data-voxel-workspace-switch="rigging" type="button">Rigging</button><button aria-pressed="false" data-voxel-workspace-switch="parts" type="button">Parts &amp; Rig</button><button aria-pressed="false" data-voxel-workspace-switch="animation" type="button">Animation</button>
+</div>
+<div class="voxel-workspace-body">
+<section aria-labelledby="voxel-workspace-preview-title" class="voxel-workspace-preview-pane">
+<div class="voxel-workspace-pane-head"><span class="voxel-panel-title" id="voxel-workspace-preview-title">Live 3D Model</span><span class="control-hint">Same camera, model, selection, rig, and weight view.</span></div>
+<div id="voxel-workspace-preview-host"></div>
+</section>
+<aside aria-label="Voxel workspace tools" class="voxel-workspace-controls" id="voxel-workspace-controls"></aside>
+</div>
+</section>
+</div>
+<aside aria-describedby="play-mode-help" aria-label="Play mode scene tools" class="panel play-panel" hidden="">
+<section class="dock-card play-lab">
+<div class="play-mode-head">
+<div class="play-mode-title">
+<h2>Play Mode</h2>
+</div>
+</div>
+<p class="sr-only" id="play-mode-help">Play Mode lets you build a small game. Set up the scene, connect game rules, test with keyboard controls, then export a standalone HTML game.</p>
+<nav aria-describedby="play-workspace-launcher-help" aria-label="Play tool workspaces" class="play-workspace-launcher">
+<span class="play-workspace-launcher-title">Tool Workspaces</span>
+<div class="play-workspace-launcher-buttons">
+<button aria-controls="play-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-play-workspace-open="builder" data-play-workspace-title="Game Builder" id="play-workspace-builder-btn" type="button">Builder</button>
+<button aria-controls="play-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-play-workspace-open="scene" data-play-workspace-title="Scene Setup" id="play-workspace-scene-btn" type="button">Scene</button>
+<button aria-controls="play-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-play-workspace-open="player" data-play-workspace-title="Player &amp; World" id="play-workspace-player-btn" type="button">Player &amp; World</button>
+<button aria-controls="play-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-play-workspace-open="layers" data-play-workspace-title="Visual Layers" id="play-workspace-layers-btn" type="button">Layers</button>
+<button aria-controls="play-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-play-workspace-open="objects" data-play-workspace-title="Scene Objects" id="play-workspace-objects-btn" type="button">Objects</button>
+<button aria-controls="play-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-play-workspace-open="characters" data-play-workspace-title="Characters" id="play-workspace-characters-btn" type="button">Characters</button>
+<button aria-controls="play-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-play-workspace-open="dialogue" data-play-workspace-title="Dialogue &amp; Messages" id="play-workspace-dialogue-btn" type="button">Dialogue</button>
+<button aria-controls="play-tool-workspace-overlay" aria-expanded="false" aria-haspopup="dialog" data-play-workspace-open="rules" data-play-workspace-title="Game Rules" id="play-workspace-rules-btn" type="button">Rules</button>
+</div>
+<span class="sr-only" id="play-workspace-launcher-help">Open a focused Play Mode workspace. Each workspace uses the same live game preview and returns it here when closed.</span>
+</nav>
+<section aria-labelledby="play-stage-title" class="play-stage-shell">
+<div class="play-stage-head">
+<div>
+<span class="play-stage-kicker">Live Tester</span>
+<h3 id="play-stage-title">Game Preview</h3>
+<p>Changes to scene objects and game rules appear here. Run the tester before trying touch triggers.</p>
+</div>
+<div aria-hidden="true" class="play-stage-controls-note">Move: A/D or arrows · Jump: Space · Interact: E</div>
+</div>
+<div class="play-stage-layout">
+<div class="play-stage-frame">
+<canvas aria-describedby="play-canvas-help" aria-label="Playable sidescroller scene canvas" height="360" id="play-canvas" tabindex="0" width="640"></canvas>
+<p class="sr-only" id="play-canvas-help">Scene canvas. Click empty space to set the next object position. Click an object to select it. Drag a selected object to move it. Use A, D, left arrow, or right arrow to move the actor while running. Use Space, W, or up arrow to jump. Use E to interact.</p>
+</div>
+<div aria-label="Game testing and export tools" class="play-stage-rail">
+<div class="play-toolbar">
+<div class="play-toolbar-group">
+<strong>Test Game</strong>
+<div class="button-row action-row play-actions">
+<button aria-describedby="play-run-help" aria-pressed="false" id="play-run-btn" type="button">Run Game</button><span class="sr-only" id="play-run-help">Start or stop the playable scene preview.</span>
+<button aria-describedby="play-reset-help" id="play-reset-btn" type="button">Reset</button><span class="sr-only" id="play-reset-help">Stops the tester and moves the actor to the latest Set Checkpoint node, or to the scene start if no checkpoint exists.</span>
+<button aria-describedby="dialogue-interact-help" id="dialogue-interact-btn" type="button">Interact</button><span class="sr-only" id="dialogue-interact-help">Start the selected nearby character dialogue in Play Mode. Keyboard shortcut E.</span>
+<button aria-describedby="play-center-help" id="play-center-btn" type="button">Center Actor</button><span class="sr-only" id="play-center-help">Move the player actor to the center of the current camera view.</span>
+<button aria-describedby="play-undo-help" id="play-undo-btn" type="button">Undo</button><span class="sr-only" id="play-undo-help">Undo the last Play Mode authoring edit.</span>
+<button aria-describedby="play-redo-help" id="play-redo-btn" type="button">Redo</button><span class="sr-only" id="play-redo-help">Redo the last undone Play Mode authoring edit.</span>
+</div>
+</div>
+<div class="play-toolbar-group play-toolbar-export">
+<strong>Share Result</strong>
+<div class="button-row action-row play-actions">
+<button aria-describedby="play-export-png-help" id="play-export-png-btn" type="button">Scene PNG</button><span class="sr-only" id="play-export-png-help">Export the current Play Mode scene as a PNG image.</span>
+<button aria-describedby="play-export-gif-help" id="play-export-gif-btn" type="button">Preview GIF</button><span class="sr-only" id="play-export-gif-help">Export a short animated Play Mode scene preview as a GIF.</span>
+<button aria-describedby="play-validate-help" id="play-validate-btn" type="button">Validate Game</button><span class="sr-only" id="play-validate-help">Check scene links, scoped touch and interaction rules, audio references, and rule destinations before export.</span>
+<button aria-describedby="play-export-game-help" class="play-export-game-btn" id="play-export-game-btn" type="button">Export Tiny Game</button><span class="sr-only" id="play-export-game-help">Validate and export a standalone HTML game containing the scene, dialogue, and game rules.</span>
+</div>
+</div>
+<div aria-labelledby="play-runtime-title" class="play-runtime-inspector">
+<div class="play-runtime-head"><strong id="play-runtime-title">Runtime Inspector</strong><span id="play-runtime-state">Stopped</span></div>
+<div class="button-row action-row play-actions">
+<button aria-describedby="play-pause-help" aria-pressed="false" disabled id="play-pause-btn" type="button">Pause</button><span class="sr-only" id="play-pause-help">Pause or resume the running Play Mode tester without changing authoring data.</span>
+<button aria-describedby="play-step-help" disabled id="play-step-btn" type="button">Step Frame</button><span class="sr-only" id="play-step-help">Advance one reference frame while the Play Mode tester is paused.</span>
+</div>
+<dl aria-describedby="play-runtime-help" class="play-runtime-grid">
+<div><dt>Scene</dt><dd id="play-runtime-scene">—</dd></div>
+<div><dt>Actor</dt><dd id="play-runtime-actor">—</dd></div>
+<div><dt>Checkpoint</dt><dd id="play-runtime-checkpoint">None</dd></div>
+<div><dt>Last Rule</dt><dd id="play-runtime-rule">None</dd></div>
+<div><dt>Values</dt><dd id="play-runtime-values">None</dd></div>
+<div><dt>Inventory</dt><dd id="play-runtime-inventory">Empty</dd></div>
+</dl>
+<p class="sr-only" id="play-runtime-help">Runtime Inspector shows the current scene, player coordinates, checkpoint, last rule trigger, saved values, and inventory while testing.</p>
+</div>
+</div>
+<p class="play-export-note"><strong>Export Tiny Game</strong> includes the scene, dialogue, triggers, variables, conditions, checkpoints, and finish rules in one HTML file.</p>
+</div>
+</div>
+</section>
+<div class="play-section-grid rearrange-zone" data-zone="play">
+<div class="play-card play-quickstart-card" id="play-quick-start" data-dock-id="play-quick-start" data-play-workspace-source="builder">
+<div class="play-guide-head">
+<h3><span aria-hidden="true" class="drag-handle">↕</span> Game Builder</h3>
+<span aria-live="polite" id="play-guide-summary">Follow the four steps, then run the game.</span>
+</div>
+<div aria-label="Tiny game build steps" class="play-quick-steps">
+<button data-play-guide-target="play-actor-frames" id="play-guide-world" type="button"><b>1. World</b><span>Set up the player and scene.</span><small>Check setup</small></button>
+<button data-play-guide-target="play-place-frame-art" id="play-guide-objects" type="button"><b>2. Objects</b><span>Place something the player can use.</span><small>Add an object</small></button>
+<button data-play-guide-target="node-editor-card" id="play-guide-rules" type="button"><b>3. Rules</b><span>Describe what starts and what happens.</span><small>Connect rules</small></button>
+<button data-play-guide-target="play-stage-title" id="play-guide-test" type="button"><b>4. Test</b><span>Run the same logic used by export.</span><small>Press Run</small></button>
+</div>
+<p aria-live="polite" class="play-guide-validation" id="play-guide-validation">Play checks will appear here.</p>
+<p class="sr-only">The Game Builder reports whether the world, objects, rules, testing, scene links, object triggers, and object frames are ready.</p>
+</div>
+<div class="play-card play-scenes-card" id="play-scenes" data-dock-id="play-scenes" data-play-workspace-source="scene">
+<h3><span aria-hidden="true" class="drag-handle">↕</span> Scene Setup</h3>
+<div class="play-scene-setup-layout">
+<section aria-labelledby="play-scene-manager-title" class="play-scene-setup-group">
+<div class="play-scene-setup-heading">
+<h4 id="play-scene-manager-title">Scene</h4>
+<span>Select and organize levels.</span>
+</div>
+<div class="play-grid">
+<label for="play-scene-select">Current Scene</label><select id="play-scene-select"></select>
+<label for="play-scene-name">Scene Name</label><input id="play-scene-name" maxlength="40" type="text" value="Scene 1"/>
+</div>
+<div class="button-row action-row play-actions play-scene-setup-actions">
+<button id="play-scene-add-btn" type="button">Add Scene</button>
+<button id="play-scene-duplicate-btn" type="button">Duplicate</button>
+<button id="play-scene-delete-btn" type="button">Delete</button>
+</div>
+</section>
+<section aria-labelledby="play-game-data-title" class="play-scene-setup-group play-game-data-group">
+<div class="play-scene-setup-heading">
+<h4 id="play-game-data-title">Starting Data</h4>
+<span>Choose what the player begins with.</span>
+</div>
+<div class="play-grid">
+<label for="play-inventory-input">Starting Item</label><input id="play-inventory-input" maxlength="40" placeholder="key, coin" type="text"/>
+</div>
+<div class="button-row action-row play-actions play-scene-setup-actions">
+<button id="play-inventory-add-btn" type="button">Add Item</button>
+<button id="play-checkpoint-save-btn" type="button">Set Start Checkpoint</button>
+</div>
+<div aria-label="Play Mode inventory" class="stack-list play-scene-inventory-list" id="play-inventory-list"></div>
+</section>
+</div>
+<p class="control-hint">Gamepads use the left stick or D-pad to move, the primary button to jump, and the secondary button to interact.</p>
+</div>
+<div class="play-card" id="play-actor-frames" data-dock-id="play-actor-frames" data-play-workspace-source="player">
+<h3><span aria-hidden="true" class="drag-handle">↕</span> Player Animation</h3>
+<div class="play-grid">
+<label for="play-idle-frame">Idle</label>
+<select id="play-idle-frame"></select>
+<label for="play-walk-frame">Walk</label>
+<select id="play-walk-frame"></select>
+<label for="play-jump-frame">Jump</label>
+<select id="play-jump-frame"></select>
+<label for="play-actor-scale">Actor Scale</label>
+<input aria-describedby="play-actor-scale-help" id="play-actor-scale" max="32" min="0.5" step="0.5" type="number" value="3"/><span class="sr-only" id="play-actor-scale-help">Changes the displayed actor size and collision box size.</span>
+</div>
+</div>
+<div class="play-card" id="play-scene-size" data-dock-id="play-scene-size" data-play-workspace-source="player">
+<h3><span aria-hidden="true" class="drag-handle">↕</span> World Settings</h3>
+<div class="play-grid">
+<label for="play-scene-width">Width</label>
+<input id="play-scene-width" max="4096" min="160" step="16" type="number" value="640"/>
+<label for="play-scene-height">Height</label>
+<input id="play-scene-height" max="2160" min="120" step="16" type="number" value="360"/>
+<label for="play-ground-y">Ground Y</label>
+<input id="play-ground-y" max="2160" min="32" step="1" type="number" value="300"/>
+<label for="play-world-width">World Width</label>
+<input id="play-world-width" max="20000" min="160" step="32" type="number" value="1600"/>
+<label for="play-background-frame">Background</label>
+<select aria-describedby="play-background-help" id="play-background-frame"></select><span class="sr-only" id="play-background-help">Choose a frame to use as the Play Mode background landscape, or choose no background.</span>
+<label for="play-background-scale">Background Fit</label>
+<select aria-describedby="play-background-fit-help" id="play-background-scale">
+<option value="cover">Cover Scene</option>
+<option value="contain">Fit Scene</option>
+<option value="stretch">Stretch Scene</option>
+<option value="tile">Tile</option>
+</select><span class="sr-only" id="play-background-fit-help">Choose how the background frame is drawn behind the scene.</span>
+<label for="play-grid-over-bg">Grid Overlay</label>
+<label class="play-check"><input aria-describedby="play-grid-bg-help" checked="" id="play-grid-over-bg" type="checkbox"/> Show Grid</label><span class="sr-only" id="play-grid-bg-help">Toggle the Play Mode layout grid over the background image.</span>
+<label for="play-camera-follow">Camera</label>
+<label class="play-check"><input checked="" id="play-camera-follow" type="checkbox"/> Follow Actor</label>
+<label for="play-auto-scroll">Auto Scroll</label>
+<label class="play-check"><input id="play-auto-scroll" type="checkbox"/> Move World</label>
+<label for="play-scroll-speed">Auto Scroll Speed</label>
+<input aria-describedby="play-scroll-speed-help" id="play-scroll-speed" max="20" min="0" step="0.25" type="number" value="1.25"/><span class="sr-only" id="play-scroll-speed-help">Auto scroll speed uses the same reference units at every display refresh rate.</span>
+<label for="play-move-speed">Move Speed</label>
+<input aria-describedby="play-move-speed-help" id="play-move-speed" max="20" min="0.25" step="0.25" type="number" value="3"/><span class="sr-only" id="play-move-speed-help">Player horizontal movement speed. The default value three matches earlier Play Mode projects.</span>
+<label for="play-jump-strength">Jump Strength</label>
+<input aria-describedby="play-jump-strength-help" id="play-jump-strength" max="30" min="0.5" step="0.25" type="number" value="8"/><span class="sr-only" id="play-jump-strength-help">Player jump strength. The default value eight matches earlier Play Mode projects.</span>
+<label for="play-gravity">Gravity</label>
+<input aria-describedby="play-gravity-help" id="play-gravity" max="4" min="0.05" step="0.05" type="number" value="0.45"/><span class="sr-only" id="play-gravity-help">Player downward acceleration. The default value zero point four five matches earlier Play Mode projects.</span>
+</div>
+</div>
+<div class="play-card play-layer-card" id="play-visual-layers" data-dock-id="play-visual-layers" data-play-workspace-source="layers">
+<h3><span aria-hidden="true" class="drag-handle">↕</span> Visual Layers</h3>
+<div aria-label="Play Mode visual layers" class="stack-list play-layer-list" id="play-layer-list"></div>
+<div class="play-grid">
+<label for="play-layer-frame">Frame</label>
+<select aria-describedby="play-layer-help" id="play-layer-frame"></select><span class="sr-only" id="play-layer-help">Choose the frame used by the selected Play Mode visual layer.</span>
+<label for="play-layer-scale">Scale</label>
+<input id="play-layer-scale" max="32" min="0.5" step="0.5" type="number" value="3"/>
+<label for="play-layer-parallax">Parallax</label>
+<input id="play-layer-parallax" max="4" min="-4" step="0.05" type="number" value="0.45"/>
+<label for="play-layer-y">Y Position</label>
+<input id="play-layer-y" max="2160" min="-1024" step="1" type="number" value="248"/>
+<label for="play-layer-opacity">Opacity</label>
+<input id="play-layer-opacity" max="1" min="0" step="0.05" type="number" value="1"/>
+<label for="play-layer-repeat">Repeat</label>
+<label class="play-check"><input checked="" id="play-layer-repeat" type="checkbox"/> Horizontal</label>
+<label for="play-layer-visible">Visible</label>
+<label class="play-check"><input checked="" id="play-layer-visible" type="checkbox"/> Show Layer</label>
+</div>
+<p class="control-hint">Use layers for sky, far background, midground, foreground, and overlay art. Each layer can repeat and scroll at its own parallax speed.</p>
+</div>
+<div class="play-card" id="play-place-frame-art" data-dock-id="play-place-frame-art" data-play-workspace-source="objects">
+<h3><span aria-hidden="true" class="drag-handle">↕</span> Add Scene Object</h3>
+<div class="play-grid">
+<label for="play-prop-frame">Frame</label>
+<select id="play-prop-frame"></select>
+<label for="play-prop-x">X</label>
+<input id="play-prop-x" max="4096" min="0" type="number" value="96"/>
+<label for="play-prop-y">Y</label>
+<input id="play-prop-y" max="2160" min="0" type="number" value="220"/>
+<label for="play-prop-scale">Scale</label>
+<input aria-describedby="play-prop-scale-help" id="play-prop-scale" max="16" min="1" step="0.5" type="number" value="3"/><span class="sr-only" id="play-prop-scale-help">Changes the selected or next placed object size and collision box size.</span>
+<label for="play-prop-solid">Collision</label>
+<label class="play-check"><input aria-describedby="play-prop-solid-help" checked="" id="play-prop-solid" type="checkbox"/> Solid</label><span class="sr-only" id="play-prop-solid-help">Solid objects block the actor. Ghost objects are decorative only.</span>
+<label for="play-prop-open-variable">Opens When Value</label>
+<input aria-describedby="play-prop-open-help" id="play-prop-open-variable" maxlength="32" placeholder="doorOpen" type="text"/><span class="sr-only" id="play-prop-open-help">When this saved value becomes yes, true, open, or one, the object stops blocking the player.</span>
+<label for="play-prop-dialogue">Interaction</label>
+<select aria-describedby="play-prop-dialogue-help" id="play-prop-dialogue"><option value="">No interaction</option></select><span class="sr-only" id="play-prop-dialogue-help">Assign this scene object to start an NPC conversation when the actor is nearby and interacts.</span>
+<label for="play-prop-trigger">Object Name</label>
+<input aria-describedby="play-prop-trigger-help" id="play-prop-trigger" maxlength="32" type="text" value="prop-1"/><span class="sr-only" id="play-prop-trigger-help">Short name used by touch rules when the player reaches this object.</span>
+<label for="play-prop-target-scene">Goes To Scene</label>
+<select aria-describedby="play-prop-entry-help" id="play-prop-target-scene"><option value="">No transition</option></select>
+<label for="play-prop-target-x">Entry X</label>
+<input aria-describedby="play-prop-entry-help" id="play-prop-target-x" max="20000" min="0" placeholder="Scene start" type="number"/>
+<label for="play-prop-target-y">Entry Y</label>
+<input aria-describedby="play-prop-entry-help" id="play-prop-target-y" max="2160" min="0" placeholder="Ground" type="number"/><span class="sr-only" id="play-prop-entry-help">Optional destination coordinates for scene transitions. Leave both blank to use the destination scene's normal starting position.</span>
+<label for="play-prop-prefab">Reusable Object</label>
+<select id="play-prop-prefab"><option value="">No prefab</option></select>
+</div>
+<div class="button-row action-row play-actions">
+<button aria-describedby="play-add-prop-help" id="play-add-prop-btn" type="button">Place Object</button><span class="sr-only" id="play-add-prop-help">Add the selected frame as a movable scene object.</span>
+<button aria-describedby="play-create-node-trigger-help" id="play-create-node-trigger-btn" type="button">Make Touch Rule</button><span class="sr-only" id="play-create-node-trigger-help">Create or open a touch rule for the selected scene object.</span>
+<button aria-describedby="play-use-active-help" id="play-use-active-btn" type="button">Use Current Art<span class="sr-only"> for the next object</span></button><span class="sr-only" id="play-use-active-help">Select the current editor frame as the next Play Mode object frame.</span>
+<button aria-describedby="play-clear-props-help" id="play-clear-props-btn" type="button">Clear Scene<span class="sr-only"> objects</span></button><span class="sr-only" id="play-clear-props-help">Remove all placed Play Mode scene objects.</span>
+<button id="play-prefab-save-btn" type="button">Save Reusable</button>
+</div>
+<p class="control-hint">Tip: click the scene canvas to set the next object position. Select an existing object, then change Scale to resize it.</p>
+</div>
+<div class="play-card play-dialogue-card" id="play-character-manager" data-dock-id="play-character-manager" data-play-workspace-source="characters">
+<h3><span aria-hidden="true" class="drag-handle">↕</span> Characters</h3>
+<p class="control-hint">Character A is the player actor. Add NPCs/scene objects here, then assign which dialogue starts when the player interacts with them.</p>
+<div aria-label="Dialogue characters" class="stack-list play-character-list" id="character-list"></div>
+<div class="play-grid">
+<label for="character-name">Name</label>
+<input id="character-name" maxlength="32" type="text" value="Character A"/>
+<label for="character-frame">Sprite Frame</label>
+<select id="character-frame"></select>
+<label for="character-position">Position</label>
+<select id="character-position">
+<option value="left">Left</option>
+<option value="center">Center</option>
+<option value="right">Right</option>
+</select>
+<label for="character-scale">Scale</label>
+<input id="character-scale" max="16" min="1" step="0.5" type="number" value="3"/>
+<label for="character-flip">Facing</label>
+<label class="play-check"><input id="character-flip" type="checkbox"/> Flip horizontal</label>
+<label for="character-start-line">NPC Interaction Starts</label>
+<select aria-label="First dialogue line for this character interaction" id="character-start-line"></select>
+</div>
+<div class="button-row action-row play-actions">
+<button aria-describedby="character-add-help" id="character-add-btn" type="button">Add Character<span class="sr-only"> as an NPC dialogue source</span></button><span class="sr-only" id="character-add-help">Create a new Play Mode dialogue character that can be assigned to scene object interactions.</span>
+<button aria-describedby="character-node-help" id="character-node-btn" type="button">Make Interaction Rule<span class="sr-only"> for selected character</span></button><span class="sr-only" id="character-node-help">Create or open a node rule that runs when the player presses Interact near the selected NPC or an object assigned to that NPC.</span>
+<button aria-describedby="character-duplicate-help" id="character-duplicate-btn" type="button">Duplicate<span class="sr-only"> selected character</span></button><span class="sr-only" id="character-duplicate-help">Copy the selected Play Mode dialogue character.</span>
+<button aria-describedby="character-delete-help" id="character-delete-btn" type="button">Delete<span class="sr-only"> selected character</span></button><span class="sr-only" id="character-delete-help">Remove the selected Play Mode dialogue character.</span>
+</div>
+</div>
+<div class="play-card play-dialogue-card" id="play-dialogue-tester" data-dock-id="play-dialogue-tester" data-play-workspace-source="dialogue">
+<h3><span aria-hidden="true" class="drag-handle">↕</span> Dialogue and Messages</h3>
+<p class="control-hint">Create reusable Play Mode text, preview it here, then attach it to message or dialogue nodes.</p>
+<div class="play-grid">
+<label for="dialogue-enabled">Editor Preview</label>
+<label class="play-check"><input id="dialogue-enabled" type="checkbox"/> Show Box</label>
+<label for="dialogue-line-index">Line</label>
+<select aria-label="Dialogue line" id="dialogue-line-index"></select>
+<label for="dialogue-character">Character</label>
+<select aria-label="Dialogue character" id="dialogue-character"></select>
+<label for="dialogue-speaker">Display Name</label>
+<input id="dialogue-speaker" maxlength="32" type="text" value="Character A"/>
+<label for="dialogue-frame">Portrait Frame</label>
+<select id="dialogue-frame"></select>
+<label for="dialogue-next-line">After This Line</label>
+<select aria-label="Choose the next dialogue line or end the conversation" id="dialogue-next-line"></select>
+</div>
+<label for="dialogue-text">Text</label>
+<textarea id="dialogue-text" maxlength="260" rows="4" spellcheck="true">Hello! This is a test line.</textarea>
+<div class="button-row action-row play-actions text-event-actions">
+<button aria-describedby="text-event-preview-help" id="text-event-preview-btn" type="button">Preview Text</button><span class="sr-only" id="text-event-preview-help">Preview the selected text event in the Play Mode dialogue box.</span>
+<button aria-describedby="text-event-message-node-help" id="text-event-message-node-btn" type="button">Message Node</button><span class="sr-only" id="text-event-message-node-help">Create a Show Message node that uses this text event.</span>
+<button aria-describedby="text-event-dialogue-node-help" id="text-event-dialogue-node-btn" type="button">Dialogue Node</button><span class="sr-only" id="text-event-dialogue-node-help">Create a Start Dialogue node that begins at this text event.</span>
+<button aria-describedby="text-event-attach-node-help" id="text-event-attach-node-btn" type="button">Attach Node</button><span class="sr-only" id="text-event-attach-node-help">Attach this text event to the currently selected compatible node.</span>
+</div>
+<div class="button-row action-row play-actions">
+<button aria-describedby="dialogue-prev-help" id="dialogue-prev-btn" type="button">Previous<span class="sr-only"> text event</span></button><span class="sr-only" id="dialogue-prev-help">Move to the previous reusable Play Mode text event.</span>
+<button aria-describedby="dialogue-next-help" id="dialogue-next-btn" type="button">Next<span class="sr-only"> text event</span></button><span class="sr-only" id="dialogue-next-help">Move to the next reusable Play Mode text event.</span>
+<button aria-describedby="dialogue-add-help" id="dialogue-add-btn" type="button">Add Line<span class="sr-only"> to text events</span></button><span class="sr-only" id="dialogue-add-help">Add the current dialogue text as a new reusable Play Mode text event.</span>
+</div>
+<div class="button-row action-row play-actions">
+<button aria-describedby="dialogue-duplicate-help" id="dialogue-duplicate-btn" type="button">Duplicate<span class="sr-only"> selected text event</span></button><span class="sr-only" id="dialogue-duplicate-help">Copy the selected Play Mode text event.</span>
+<button aria-describedby="dialogue-delete-help" id="dialogue-delete-btn" type="button">Delete<span class="sr-only"> selected text event</span></button><span class="sr-only" id="dialogue-delete-help">Remove the selected Play Mode text event.</span>
+<button aria-describedby="dialogue-typewriter-help" aria-pressed="true" id="dialogue-typewriter-btn" type="button">Typewriter<span class="sr-only"> text reveal toggle</span></button><span class="sr-only" id="dialogue-typewriter-help">Toggle animated typewriter text reveal in the Play Mode dialogue box.</span>
+</div>
+<div aria-labelledby="dialogue-node-title" class="dialogue-node-panel">
+<h4 id="dialogue-node-title">Text Event Flow</h4>
+<p class="control-hint">Reusable text map: lines can be previewed, started by characters, or attached to Play Mode nodes.</p>
+<div aria-label="Text event flow map" class="dialogue-node-tree" id="dialogue-node-tree"></div>
+</div>
+</div>
+<div class="play-card" id="play-scene-objects" data-dock-id="play-scene-objects" data-play-workspace-source="objects">
+<h3>Scene Objects</h3>
+<div class="play-grid play-object-tools-grid">
+<label for="play-object-snap">Move Snap</label>
+<select aria-describedby="play-object-snap-help" id="play-object-snap"><option value="1">1 px</option><option value="4">4 px</option><option value="8">8 px</option><option value="16">16 px</option><option value="32">32 px</option></select><span class="sr-only" id="play-object-snap-help">Snap dragged objects and arrow key nudges to the selected pixel increment.</span>
+</div>
+<div aria-describedby="play-prop-list-help" aria-label="Placed scene objects" class="stack-list play-prop-list" id="play-prop-list"></div><p class="sr-only" id="play-prop-list-help">Select an object from this list to update its frame, position, scale, or collision setting. When the scene canvas is focused, use the arrow keys to nudge the selected object by the Move Snap amount.</p>
+<div class="button-row action-row play-actions">
+<button aria-describedby="play-prop-list-help" id="play-toggle-collision-btn" type="button">Toggle Collision</button>
+<button aria-describedby="play-duplicate-prop-help" id="play-duplicate-prop-btn" type="button">Duplicate</button><span class="sr-only" id="play-duplicate-prop-help">Duplicate the selected scene object with a unique touch rule name.</span>
+<button aria-describedby="play-order-prop-help" id="play-prop-back-btn" type="button">Send Back</button>
+<button aria-describedby="play-order-prop-help" id="play-prop-front-btn" type="button">Bring Forward</button><span class="sr-only" id="play-order-prop-help">Change the selected scene object's drawing order without changing its position.</span>
+<button aria-describedby="play-delete-prop-help" id="play-delete-prop-btn" type="button">Delete Selected<span class="sr-only"> scene object</span></button><span class="sr-only" id="play-delete-prop-help">Remove the selected placed Play Mode scene object.</span>
+</div>
+</div>
+</div>
+<p class="control-hint">Controls: A/D or arrows move. Space jumps. The camera follows the actor across the wider world. Scene setup saves inside the project file.</p>
+</section>
+</aside>
+<div class="modal-overlay play-workspace-overlay" data-active-workspace="" hidden="" id="play-tool-workspace-overlay">
+<section aria-describedby="play-tool-workspace-help" aria-labelledby="play-tool-workspace-title" aria-modal="true" class="modal-card play-workspace-dialog" role="dialog" tabindex="-1">
+<div class="modal-head play-workspace-head">
+<div><span class="play-mode-eyebrow">Play Mode</span><h2 id="play-tool-workspace-title">Tool Workspace</h2></div>
+<div aria-label="Play workspace history and close actions" class="play-workspace-head-actions" role="group">
+<button aria-label="Undo Play workspace edit" id="play-workspace-undo-btn" type="button">Undo</button>
+<button aria-label="Redo Play workspace edit" id="play-workspace-redo-btn" type="button">Redo</button>
+<button aria-label="Close Play tool workspace" id="play-workspace-close-btn" type="button">Close</button>
+</div>
+</div>
+<p class="control-hint" id="play-tool-workspace-help">The live game preview is shared with the main Play workspace. Changes made here appear immediately when you close this view.</p>
+<div aria-label="Switch Play tool workspace" class="play-workspace-switcher" role="toolbar">
+<button aria-pressed="false" data-play-workspace-switch="builder" type="button">Builder</button>
+<button aria-pressed="false" data-play-workspace-switch="scene" type="button">Scene</button>
+<button aria-pressed="false" data-play-workspace-switch="player" type="button">Player &amp; World</button>
+<button aria-pressed="false" data-play-workspace-switch="layers" type="button">Layers</button>
+<button aria-pressed="false" data-play-workspace-switch="objects" type="button">Objects</button>
+<button aria-pressed="false" data-play-workspace-switch="characters" type="button">Characters</button>
+<button aria-pressed="false" data-play-workspace-switch="dialogue" type="button">Dialogue</button>
+<button aria-pressed="false" data-play-workspace-switch="rules" type="button">Rules</button>
+</div>
+<div class="play-workspace-body">
+<section aria-labelledby="play-workspace-preview-title" class="play-workspace-preview-pane">
+<div class="play-workspace-pane-head"><span class="play-panel-title" id="play-workspace-preview-title">Live Game Preview</span><span class="control-hint">Same scene, tester, runtime inspector, validation, and export controls.</span></div>
+<div id="play-workspace-preview-host"></div>
+</section>
+<aside aria-label="Play workspace tools" class="play-workspace-controls" id="play-workspace-controls"></aside>
+</div>
+</section>
+</div>
+<aside aria-label="Frames, layers, and palette" class="panel side-panel rearrange-zone" data-zone="right">
+<section class="dock-card" data-dock-id="frames">
+<h2>Frames</h2>
+<output aria-live="polite" class="frame-selection-output" id="frame-selection-output">One frame selected</output>
+<div aria-describedby="frame-list-help" aria-multiselectable="true" class="stack-list" id="frames-list" role="listbox"></div>
+<span class="sr-only" id="frame-list-help">Select one frame, Control-click to toggle frames, or Shift-click to select a range.</span>
+<div class="button-row action-row frame-actions">
+<button aria-label="Add animation frame" id="add-frame-btn">Add</button>
+<button id="duplicate-frame-btn">Copy</button>
+<button id="delete-frame-btn">Delete</button>
+<button id="frame-select-all-btn" type="button">Select All</button>
+<button id="frame-duplicate-selected-btn" type="button">Copy Selected</button>
+<button id="frame-delete-selected-btn" type="button">Delete Selected</button>
+<button id="frame-reverse-selected-btn" type="button">Reverse Selected</button>
+</div>
+<label class="control-label spaced-label" for="frame-duration">Frame Duration</label>
+<input id="frame-duration" max="2000" min="20" step="10" type="number" value="120"/>
+<label class="control-label spaced-label" for="frame-tag">Frame Tag</label>
+<input id="frame-tag" maxlength="32" type="text" placeholder="idle, attack, end"/>
+<div class="animation-clip-grid">
+<label for="animation-clip-select">Animation Clip</label>
+<select id="animation-clip-select"></select>
+<label for="animation-clip-name">Clip Name</label>
+<input id="animation-clip-name" maxlength="32" type="text" value="Main"/>
+<label for="animation-clip-start">Start</label>
+<input id="animation-clip-start" min="1" type="number" value="1"/>
+<label for="animation-clip-end">End</label>
+<input id="animation-clip-end" min="1" type="number" value="1"/>
+<label for="animation-clip-loop">Loop</label>
+<select id="animation-clip-loop"><option value="loop">Loop</option><option value="once">Once</option><option value="pingpong">Ping Pong</option></select>
+<label for="animation-batch-duration">Range Time</label>
+<input id="animation-batch-duration" max="10000" min="20" step="10" type="number" value="120"/>
+</div>
+<div class="button-row action-row animation-actions">
+<button id="animation-clip-new-btn" type="button">New Clip</button>
+<button id="animation-clip-save-btn" type="button">Save Clip</button>
+<button id="animation-clip-delete-btn" type="button">Delete Clip</button>
+<button id="animation-duration-apply-btn" type="button">Apply Time</button>
+<button id="animation-link-cel-btn" type="button">Link Previous</button>
+<button id="animation-unlink-cel-btn" type="button">Unlink Cel</button>
+</div>
+<details class="timeline-settings">
+<summary aria-describedby="timeline-settings-help">Timeline View</summary>
+<span class="sr-only" id="timeline-settings-help">Open frame row sizing and onion skin appearance controls.</span>
+<div class="timeline-settings-grid">
+<label for="timeline-zoom">Row Size</label><input id="timeline-zoom" max="180" min="72" step="6" type="range" value="96"/>
+<label for="onion-distance">Onion Range</label><input id="onion-distance" max="4" min="1" type="number" value="1"/>
+<label for="onion-previous-color">Previous Color</label><input id="onion-previous-color" type="color" value="#ff3355"/>
+<label for="onion-previous-opacity">Previous Opacity</label><input id="onion-previous-opacity" max="60" min="5" type="range" value="22"/>
+<label for="onion-next-color">Next Color</label><input id="onion-next-color" type="color" value="#33aaff"/>
+<label for="onion-next-opacity">Next Opacity</label><input id="onion-next-opacity" max="60" min="5" type="range" value="16"/>
+</div>
+</details>
+</section>
+<section class="dock-card" data-dock-id="layers">
+<h2>Layers</h2>
+<div class="stack-list" id="layers-list"></div>
+<div class="button-row action-row layer-actions">
+<button aria-label="Add drawing layer" id="add-layer-btn">Add</button>
+<button id="duplicate-layer-btn">Copy</button>
+<button id="delete-layer-btn">Delete</button>
+<button id="add-layer-group-btn" type="button">New Folder</button>
+<button id="move-layer-group-btn" type="button">Move To</button>
+</div>
+<label class="control-label spaced-label" for="layer-opacity">Layer Opacity</label>
+<input id="layer-opacity" max="100" min="0" type="range" value="100"/>
+<label class="control-label spaced-label" for="layer-blend-mode">Blend Mode</label>
+<select aria-label="Choose layer blend mode" id="layer-blend-mode">
+<option value="source-over">Normal</option>
+<option value="multiply">Multiply</option>
+<option value="screen">Screen</option>
+<option value="overlay">Overlay</option>
+<option value="darken">Darken</option>
+<option value="lighten">Lighten</option>
+<option value="color-dodge">Color Dodge</option>
+<option value="color-burn">Color Burn</option>
+<option value="hard-light">Hard Light</option>
+<option value="soft-light">Soft Light</option>
+<option value="difference">Difference</option>
+<option value="exclusion">Exclusion</option>
+</select>
+<div class="button-row action-row layer-move-row">
+<button aria-label="Move selected layer up" id="layer-up-btn">Up</button>
+<button aria-label="Move selected layer down" id="layer-down-btn">Down</button>
+</div>
+<div class="layer-feature-grid">
+<label class="play-check"><input id="layer-alpha-lock" type="checkbox"/> Alpha Lock</label>
+<label class="play-check"><input id="layer-clipping" type="checkbox"/> Clip Below</label>
+<label for="layer-hue">Hue</label><input id="layer-hue" max="180" min="-180" type="number" value="0"/>
+<label for="layer-saturation">Saturation</label><input id="layer-saturation" max="100" min="-100" type="number" value="0"/>
+<label for="layer-lightness">Lightness</label><input id="layer-lightness" max="100" min="-100" type="number" value="0"/>
+<label for="layer-brightness">Brightness</label><input id="layer-brightness" max="100" min="-100" type="number" value="0"/>
+<label for="layer-contrast">Contrast</label><input id="layer-contrast" max="100" min="-100" type="number" value="0"/>
+<label for="layer-gamma">Gamma</label><input id="layer-gamma" max="5" min="0.1" step="0.1" type="number" value="1"/>
+</div>
+<div class="button-row action-row layer-feature-actions">
+<button id="layer-merge-down-btn" type="button">Merge Down</button>
+<button id="layer-flatten-btn" type="button">Flatten</button>
+<button id="layer-flip-h-btn" type="button">Flip H</button>
+<button id="layer-flip-v-btn" type="button">Flip V</button>
+<button id="layer-rotate-btn" type="button">Rotate 90</button>
+<button id="layer-adjust-btn" type="button">Adjust Color</button>
+<button id="layer-desaturate-btn" type="button">Desaturate</button>
+<button id="layer-invert-color-btn" type="button">Invert Colors</button>
+</div>
+</section>
+<section class="dock-card" data-dock-id="canvas-operations">
+<h2>Canvas Modifications</h2>
+<div class="canvas-operation-grid">
+<label for="canvas-operation-width">Width</label><input id="canvas-operation-width" max="512" min="1" type="number" value="32"/>
+<label for="canvas-operation-height">Height</label><input id="canvas-operation-height" max="512" min="1" type="number" value="32"/>
+<label for="canvas-operation-anchor">Anchor</label><select id="canvas-operation-anchor"><option value="top-left">Top Left</option><option value="top-center">Top Center</option><option value="top-right">Top Right</option><option value="middle-left">Middle Left</option><option selected="" value="center">Center</option><option value="middle-right">Middle Right</option><option value="bottom-left">Bottom Left</option><option value="bottom-center">Bottom Center</option><option value="bottom-right">Bottom Right</option></select>
+<label for="canvas-scale-percent">Scale</label><select aria-describedby="canvas-scale-help" id="canvas-scale-percent"><option value="25">25%</option><option value="50">50%</option><option value="100" selected="">100%</option><option value="200">200%</option><option value="300">300%</option><option value="400">400%</option></select>
+<label for="canvas-scale-multiplier">Multiplier</label><input aria-describedby="canvas-scale-help" id="canvas-scale-multiplier" max="16" min="1" step="1" type="number" value="1"/>
+<span class="sr-only" id="canvas-scale-help">Set nearest-neighbor resize dimensions from a percentage or whole-number multiplier, then use Nearest Scale.</span>
+</div>
+<div class="button-row action-row canvas-operation-actions">
+<button id="canvas-crop-selection-btn" type="button">Crop Selection</button>
+<button id="canvas-trim-btn" type="button">Trim Content</button>
+<button id="canvas-resize-space-btn" type="button">Resize Space</button>
+<button id="canvas-resample-btn" type="button">Nearest Scale</button>
+<button id="canvas-flip-h-btn" type="button">Flip H</button>
+<button id="canvas-flip-v-btn" type="button">Flip V</button>
+<button id="canvas-rotate-btn" type="button">Rotate 90</button>
+</div>
+</section>
+<section aria-labelledby="touch-hand-title" class="dock-card touch-hand-panel" data-dock-id="touch-hand">
+<h2 id="touch-hand-title">Touch Layout</h2>
+<button aria-describedby="left-handed-toggle-help" aria-pressed="false" id="left-handed-toggle-btn" type="button">Left Handed<span class="sr-only">, currently off</span></button>
+<button id="touch-exit-btn" type="button">Base Mode<span class="sr-only">, exit touch layout</span></button>
+<p class="touch-gesture-hint">1 finger draws · 2 fingers pan</p>
+<p class="sr-only" id="left-handed-toggle-help">Left Handed is available only while Touch Toggle is on. It moves the palette and utility controls to the right side for left-handed drawing.</p>
+</section>
+<section class="dock-card" data-dock-id="palette">
+<h2>Palette</h2>
+<div class="preset-card">
+<label for="palette-preset-select">Preset</label>
+<select aria-label="Choose palette preset" id="palette-preset-select"></select>
+<label for="preset-name-input">Preset Name</label>
+<input aria-label="Preset name" id="preset-name-input" type="text" value="Base"/>
+<div class="preset-actions">
+<button aria-label="Create new palette preset" id="new-preset-btn" type="button">New</button>
+<button id="rename-preset-btn" type="button">Rename</button>
+<button id="delete-preset-btn" type="button">Delete</button>
+</div>
+</div>
+<div aria-label="Color palette" class="palette" id="palette"></div>
+<div class="color-wheel-card">
+<label for="palette-color-wheel">Color Wheel</label>
+<input aria-label="Choose a color to add to the palette" id="palette-color-wheel" type="color" value="#000000"/>
+<label for="palette-hex-input">Hex Color</label>
+<input aria-label="Hex color to add to the palette" id="palette-hex-input" maxlength="7" type="text" value="#000000"/>
+<button id="add-palette-btn">Add to Preset</button>
+</div>
+<div class="palette-tools-grid">
+<label for="palette-ramp-end">Ramp End</label><input id="palette-ramp-end" type="color" value="#ffffff"/>
+<label for="palette-ramp-steps">Ramp Steps</label><input id="palette-ramp-steps" max="32" min="2" type="number" value="6"/>
+<label for="palette-remap-source">Remap From</label><select id="palette-remap-source"></select>
+<label for="palette-remap-target">Remap To</label><select id="palette-remap-target"></select>
+</div>
+<div class="button-row action-row palette-tool-actions">
+<button id="palette-extract-btn" type="button">Extract</button>
+<button id="palette-ramp-btn" type="button">Add Ramp</button>
+<button id="palette-sort-hue-btn" type="button">Sort Hue</button>
+<button id="palette-sort-value-btn" type="button">Sort Value</button>
+<button id="palette-remap-btn" type="button">Remap Frames</button>
+<button id="palette-swap-btn" type="button">Swap Colors</button>
+<button id="palette-import-btn" type="button">Import Palette</button>
+<button id="palette-export-gpl-btn" type="button">Export GPL</button>
+<button id="palette-export-text-btn" type="button">Export Text</button>
+<input accept=".gpl,.txt,text/plain" aria-label="Choose palette file" class="sr-only" id="palette-import-input" type="file"/>
+</div>
+<output aria-live="polite" id="palette-usage-output">No color usage yet.</output>
+</section>
+<section class="dock-card" data-dock-id="effects-stack">
+<h2>Effects Stack</h2>
+<p class="hint">Stack effects.</p>
+<label for="effect-select">Effect</label>
+<select aria-label="Choose layer effect" id="effect-select">
+<option value="outline">Outline</option>
+<option value="shadow">Shadow</option>
+<option value="dither">Dither</option>
+<option value="limitPalette">Limit Palette</option>
+</select>
+<div class="button-row action-row">
+<button id="effect-preview-btn" type="button">Preview</button>
+<button id="effect-apply-btn" type="button">Apply</button>
+<button id="effect-clear-btn" type="button">Clear</button>
+</div>
+</section>
+<section class="dock-card" data-dock-id="pixel-operations">
+<h2>Pixel Tools</h2>
+<p class="hint">Exact color cleanup, tonal mapping, and seamless offsets.</p>
+<div class="feature-grid pixel-operation-grid">
+<label for="pixel-operation-source">Source</label><input aria-label="Source color" id="pixel-operation-source" type="color" value="#ff00ff"/>
+<label for="pixel-operation-target">Target</label><input aria-label="Replacement color" id="pixel-operation-target" type="color" value="#000000"/>
+<label for="pixel-operation-tolerance">Tolerance</label><input id="pixel-operation-tolerance" max="255" min="0" type="number" value="0"/>
+<label for="pixel-operation-scope">Scope</label><select id="pixel-operation-scope"><option value="layer">Active Layer</option><option value="visible">Visible Layers</option><option value="frame">Active Frame</option><option value="project">All Frames</option></select>
+<label class="play-check"><input aria-label="Limit operation to selection" id="pixel-operation-selection-only" type="checkbox"/> Sel</label>
+</div>
+<div class="button-row action-row">
+<button aria-describedby="pixel-remove-help" id="pixel-remove-color-btn" type="button">Color → Transparent</button>
+<button id="pixel-replace-color-btn" type="button">Replace Color</button>
+<span class="sr-only" id="pixel-remove-help">Converts matching pixels to true transparent pixels in Pixel Bug.</span>
+</div>
+<div class="feature-grid pixel-operation-grid">
+<label for="pixel-threshold">Threshold</label><input id="pixel-threshold" max="255" min="0" type="number" value="128"/>
+<label for="pixel-threshold-low">Low Color</label><input aria-label="Threshold low color" id="pixel-threshold-low" type="color" value="#000000"/>
+<label for="pixel-threshold-high">High Color</label><input aria-label="Threshold high color" id="pixel-threshold-high" type="color" value="#ffffff"/>
+<label class="play-check"><input aria-label="Make low threshold pixels transparent" id="pixel-threshold-low-transparent" type="checkbox"/> Low → Clear</label>
+<label class="play-check"><input aria-label="Make high threshold pixels transparent" id="pixel-threshold-high-transparent" type="checkbox"/> High → Clear</label>
+<label for="pixel-posterize-levels">Posterize</label><input id="pixel-posterize-levels" max="32" min="2" type="number" value="4"/>
+<label for="pixel-gradient-dark">Gradient Dark</label><input aria-label="Gradient dark color" id="pixel-gradient-dark" type="color" value="#000000"/>
+<label for="pixel-gradient-light">Gradient Light</label><input aria-label="Gradient light color" id="pixel-gradient-light" type="color" value="#ffffff"/>
+</div>
+<div class="button-row action-row">
+<button id="pixel-threshold-btn" type="button">Threshold</button>
+<button id="pixel-posterize-btn" type="button">Posterize</button>
+<button id="pixel-gradient-btn" type="button">Gradient Map</button>
+<button id="pixel-palette-map-btn" type="button">Palette Map</button>
+</div>
+<div class="feature-grid pixel-operation-grid">
+<label for="pixel-offset-x">Offset X</label><input id="pixel-offset-x" max="512" min="-512" type="number" value="0"/>
+<label for="pixel-offset-y">Offset Y</label><input id="pixel-offset-y" max="512" min="-512" type="number" value="0"/>
+<label class="play-check"><input checked="" id="pixel-offset-wrap" type="checkbox"/> Wrap Edges</label>
+</div>
+<div class="button-row action-row"><button id="pixel-offset-btn" type="button">Offset Layer</button></div>
+</section>
+</aside>
+</main>
+</div>
+<div class="modal-overlay" hidden="" id="new-project-overlay">
+<section aria-labelledby="new-project-title" aria-modal="true" class="modal-card confirm-modal" role="dialog">
+<div class="modal-head">
+<h2 id="new-project-title">New Canvas?</h2>
+<button aria-label="Cancel new canvas" class="mini-square-btn" id="cancel-new-project-btn" type="button">×</button>
+</div>
+<p class="modal-note">Are you sure you want to open a new canvas? Your current work will be replaced unless you saved it.</p>
+<div class="button-row action-row confirm-actions">
+<button id="confirm-new-project-btn" type="button">Yes, New Canvas</button>
+<button id="keep-current-project-btn" type="button">Keep Working</button>
+</div>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="pixelizer-overlay">
+<section aria-labelledby="pixelizer-title" aria-modal="true" class="modal-card pixelizer-modal" role="dialog">
+<div class="modal-head">
+<h2 id="pixelizer-title">Pixelize Image</h2>
+<button aria-label="Close pixelizer" class="mini-square-btn" id="close-pixelizer-btn" type="button">×</button>
+</div>
+<p class="modal-note">Upload an image, adjust the grid, then import it into the active layer.</p>
+<p class="sr-only" id="pixelizer-help">Upload an image, adjust the pixel grid and color levels, then import it into the active layer.</p>
+<label class="file-upload-btn" for="image-import-input">Upload Image</label>
+<input accept="image/*" aria-describedby="pixelizer-help" class="hidden-file" id="image-import-input" type="file"/>
+<div class="pixelizer-control-group">
+<label for="pixelize-size">Pixel Grid</label>
+<input id="pixelize-size" max="512" min="8" step="1" type="range" value="512"/>
+<output for="pixelize-size" id="pixelize-size-output">512 × 512</output>
+</div>
+<div class="pixelizer-control-group">
+<label for="pixelize-colors">Color Levels</label>
+<input id="pixelize-colors" max="32" min="2" step="1" type="range" value="12"/>
+<output for="pixelize-colors" id="pixelize-colors-output">12 levels</output>
+</div>
+<label class="checkbox-label">
+<input checked="" id="pixelize-fit" type="checkbox"/>
+        Fit image inside square
+      </label>
+<canvas aria-label="Pixelized image preview" height="192" id="pixelize-preview" width="192"></canvas>
+<div class="button-row action-row pixelizer-actions">
+<button id="pixelize-import-btn">Import</button>
+</div>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="model-converter-overlay">
+<section aria-describedby="model-converter-help" aria-labelledby="model-converter-title" aria-modal="true" class="modal-card model-converter-modal" role="dialog">
+<div class="modal-head">
+<h2 id="model-converter-title">3D Model to Pixel Art</h2>
+<button aria-label="Close 3D model converter" class="mini-square-btn" id="close-model-converter-btn" type="button">×</button>
+</div>
+<p class="modal-note" id="model-converter-help">Import OBJ, MTL, STL, and texture image files. Six-view import keeps front, back, left, right, top, and isometric views as separate layers. Turntable import creates only the exact rotated view shown.</p>
+<label class="file-upload-btn" for="model-converter-input">Upload Model, Materials, Textures</label>
+<input accept=".obj,.mtl,.stl,.png,.jpg,.jpeg,.webp,.gif,.bmp,model/obj,model/stl,image/*" aria-describedby="model-converter-help" class="hidden-file" id="model-converter-input" multiple="" type="file"/>
+<div aria-label="3D converter controls" class="model-converter-layout">
+<section aria-labelledby="model-import-title" class="model-converter-group">
+<h3 id="model-import-title">Output</h3>
+<div class="voxel-control-card">
+<label for="model-converter-size">Sprite Size</label>
+<input aria-describedby="model-converter-size-output" id="model-converter-size" max="128" min="16" step="1" type="range" value="48"/>
+<output for="model-converter-size" id="model-converter-size-output">48 × 48</output>
+</div>
+<fieldset aria-label="3D converter color mode" class="model-color-mode">
+<legend>Color Mode</legend>
+<label><input aria-label="Use model colors" checked="" name="model-converter-color-mode" type="radio" value="model"/> Model colors</label>
+<label><input aria-label="Use one ink color" name="model-converter-color-mode" type="radio" value="ink"/> One ink color</label>
+<label class="model-ink-picker" for="model-converter-ink-color">
+<span>Ink Color</span>
+<input aria-label="Choose one-color model import color" id="model-converter-ink-color" type="color" value="#000000"/>
+</label>
+</fieldset>
+<label class="checkbox-label model-converter-check">
+<input checked="" id="model-converter-shading" type="checkbox"/>
+            Shade faces
+          </label>
+</section>
+<section aria-labelledby="model-turntable-title" class="model-converter-group">
+<h3 id="model-turntable-title">Turntable View</h3>
+<div class="model-slider-grid">
+<label for="model-converter-turntable-x">X Rotation <output for="model-converter-turntable-x" id="model-converter-turntable-x-output">-20°</output></label>
+<input id="model-converter-turntable-x" max="180" min="-180" step="1" type="range" value="-20"/>
+<label for="model-converter-turntable-y">Y Rotation <output for="model-converter-turntable-y" id="model-converter-turntable-y-output">35°</output></label>
+<input id="model-converter-turntable-y" max="180" min="-180" step="1" type="range" value="35"/>
+<label for="model-converter-turntable-z">Z Rotation <output for="model-converter-turntable-z" id="model-converter-turntable-z-output">0°</output></label>
+<input id="model-converter-turntable-z" max="180" min="-180" step="1" type="range" value="0"/>
+</div>
+</section>
+</div>
+<canvas aria-label="3D model pixel conversion preview" height="232" id="model-converter-preview" width="560"></canvas>
+<div class="button-row action-row voxel-actions model-converter-actions">
+<button id="model-converter-import-btn" type="button">Import Six View Layers</button>
+<button id="model-converter-import-turntable-btn" type="button">Import Turntable View Only</button>
+</div>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="voxel-overlay">
+<section aria-describedby="voxel-help" aria-labelledby="voxel-title" aria-modal="true" class="modal-card voxel-modal" role="dialog">
+<div class="modal-head">
+<h2 id="voxel-title">Voxel Preview</h2>
+<button aria-label="Close voxel preview" class="mini-square-btn" id="close-voxel-btn" type="button">×</button>
+</div>
+<p class="modal-note">Turn the active frame into a lightweight voxel-style preview, then export the preview as a PNG, Blender-ready OBJ model, Geometry Nodes JSON, Grease Pencil JSON, or a Pack for Blender bundle.</p>
+<p class="sr-only" id="voxel-help">Voxel preview workspace. Adjust voxel depth, X axis rotation, Y axis rotation, Z axis rotation, scale, depth mode, merged geometry, and floor visibility. Export a PNG preview, turntable GIF, Blender-ready OBJ model, Geometry Nodes JSON, Grease Pencil JSON, or a Pack for Blender bundle. The preview uses visible pixels from the active frame.</p>
+<div aria-label="Voxel preview controls" class="voxel-controls">
+<div class="voxel-control-card">
+<label for="voxel-depth">Voxel Depth</label>
+<input aria-describedby="voxel-depth-output" id="voxel-depth" max="12" min="1" step="1" type="range" value="4"/>
+<output for="voxel-depth" id="voxel-depth-output">4 blocks</output>
+</div>
+<div class="voxel-control-card">
+<label for="voxel-scale">Preview Scale</label>
+<input aria-describedby="voxel-scale-output" id="voxel-scale" max="18" min="6" step="1" type="range" value="10"/>
+<output for="voxel-scale" id="voxel-scale-output">10 px</output>
+</div>
+<div class="voxel-control-card voxel-axis-control">
+<label for="voxel-rotation-x">X Axis Rotation</label>
+<input aria-describedby="voxel-rotation-x-output" id="voxel-rotation-x" max="60" min="-60" step="1" type="range" value="-20"/>
+<output for="voxel-rotation-x" id="voxel-rotation-x-output">-20°</output>
+</div>
+<div class="voxel-control-card voxel-axis-control">
+<label for="voxel-rotation-y">Y Axis Rotation</label>
+<input aria-describedby="voxel-rotation-y-output" id="voxel-rotation-y" max="180" min="-180" step="1" type="range" value="35"/>
+<output for="voxel-rotation-y" id="voxel-rotation-y-output">35°</output>
+</div>
+<div class="voxel-control-card voxel-wide-control">
+<label for="voxel-depth-mode">Depth Mode</label>
+<select aria-describedby="voxel-depth-mode-help" class="styled-select" id="voxel-depth-mode">
+<option value="uniform">Uniform Depth</option>
+<option value="brightness">Brightness Height Map</option>
+<option value="brightness-reverse">Reverse Brightness Map</option>
+<option value="landscape">Landscape Terrain</option>
+<option value="layers">Layer Depth Steps</option>
+</select>
+<p aria-hidden="true" class="control-hint">Brightness modes use color value to vary extrusion depth.</p>
+<span class="sr-only" id="voxel-depth-mode-help">Uniform depth gives all pixels the same extrusion. Brightness height map raises brighter colors and recesses darker colors. Reverse brightness height map raises darker colors and recesses brighter colors. Landscape terrain treats blues as low water, greens as rolling land, browns and grays as higher ground, and light colors as peaks. Layer depth steps gives each visible layer its own depth tier, so it is most visible when multiple layers overlap.</span>
+</div>
+<div class="voxel-control-card voxel-axis-control">
+<label for="voxel-rotation-z">Z Axis Rotation</label>
+<input aria-describedby="voxel-rotation-z-output voxel-rotation-z-help" id="voxel-rotation-z" max="180" min="-180" step="1" type="range" value="0"/>
+<output for="voxel-rotation-z" id="voxel-rotation-z-output">0°</output>
+<span class="sr-only" id="voxel-rotation-z-help">Rotates the voxel model around the vertical depth axis, useful for landscape previews and angled map views.</span>
+</div>
+<div class="voxel-toggle-card">
+<label class="checkbox-label">
+<input checked="" id="voxel-floor" type="checkbox"/>
+            Show floor
+          </label>
+<label class="checkbox-label">
+<input checked="" id="voxel-merge" type="checkbox"/>
+            Merge geometry
+          </label>
+</div>
+<div class="button-row action-row voxel-actions">
+<button id="export-voxel-btn" type="button">Export PNG</button>
+<button aria-describedby="voxel-help" id="export-voxel-turntable-btn" type="button">Export Turntable</button>
+<button aria-describedby="voxel-help" id="export-voxel-obj-btn" type="button">Export 3D Model</button>
+<button aria-describedby="voxel-help" id="export-voxel-nodes-btn" type="button">Export Nodes JSON</button>
+<button aria-describedby="voxel-help" id="export-voxel-gp-btn" type="button">Export Grease Pencil</button>
+<button aria-describedby="voxel-help" id="export-blender-pack-btn" type="button">Pack for Blender</button>
+</div>
+</div>
+<canvas aria-label="Voxel preview of the active frame" height="520" id="voxel-canvas" width="720"></canvas>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="print-preview-overlay">
+<section aria-describedby="print-preview-help" aria-labelledby="print-preview-title" aria-modal="true" class="modal-card print-preview-modal" role="dialog">
+<div class="modal-head">
+<h2 id="print-preview-title">Large Print Preview</h2>
+<button aria-label="Close large print preview" class="mini-square-btn" id="close-print-preview-btn" type="button">×</button>
+</div>
+<p class="modal-note" id="print-preview-help">Arrange artwork, templates, and imported Base View layers. Layer transforms and visibility are included in the exported print file.</p>
+<div aria-label="Print preview zoom controls" class="print-preview-toolbar" role="group">
+<button aria-pressed="true" id="print-preview-move-tool" type="button">Move Layer</button>
+<button aria-pressed="false" id="print-preview-pan-tool" type="button">Pan View</button>
+<button aria-label="Undo print layer change" disabled="" id="print-layer-undo" type="button">Undo</button>
+<button aria-label="Redo print layer change" disabled="" id="print-layer-redo" type="button">Redo</button>
+<button aria-label="Zoom out print preview" id="print-preview-zoom-out" type="button">−</button>
+<label class="print-preview-zoom-label" for="print-preview-zoom">Zoom</label>
+<input aria-label="Print preview zoom percentage" id="print-preview-zoom" max="800" min="25" step="25" type="range" value="100"/>
+<output for="print-preview-zoom" id="print-preview-zoom-output">100%</output>
+<button aria-label="Zoom in print preview" id="print-preview-zoom-in" type="button">+</button>
+<button aria-label="Fit print preview" id="print-preview-zoom-reset" type="button">Fit</button>
+</div>
+<div class="print-preview-workspace">
+<div class="print-preview-stage">
+<p class="sr-only" id="print-preview-pan-help">Choose Move Layer to drag the selected image. Hold Shift while dragging to constrain movement horizontally or vertically. Drag a white corner handle to resize while preserving its proportions. Choose Pan View, hold Space, or use the middle mouse button to move the view. Use the mouse wheel to zoom. Arrow keys nudge the selected layer by one print pixel; hold Shift to nudge by ten. Control or Command Z undoes print layer changes while this preview is open.</p>
+<p class="sr-only" id="print-preview-resize-help">Corner handles resize the selected image from the opposite corner. Scale changes are included in print export.</p>
+<canvas aria-describedby="print-preview-pan-help print-preview-resize-help print-layer-help print-layer-import-help" aria-label="Editable large print production preview" height="640" id="large-print-preview" tabindex="0" width="960"></canvas>
+<p aria-live="polite" class="sr-only" id="print-layer-status" role="status">Artwork layer selected.</p>
+</div>
+<aside aria-labelledby="print-layer-title" class="print-layer-panel">
+<h3 id="print-layer-title">Layers</h3>
+<p class="sr-only" id="print-layer-help">The layer stack is shown from top to bottom. Select Artwork, Template, or an imported Base View image to move, resize, and transform it. Background, Guides, and Cutline are locked. Image, Template, and Background visibility affect print export. Guides and Cutline are preview aids and never export.</p>
+<div aria-describedby="print-layer-help" aria-label="Print layer stack" class="print-layer-list" id="print-layer-list" role="list"></div>
+<p class="sr-only" id="print-layer-import-help">Import Base Layers creates separate image snapshots from every layer in the current Base View frame. Re-importing replaces earlier imported snapshots. Each imported image can be hidden, moved, resized, reordered, rotated, faded, blended, flipped, and color-adjusted separately.</p>
+<div aria-label="Base layer import controls" class="button-row print-layer-import" role="group">
+<button aria-describedby="print-layer-import-help" id="print-import-base-layers" type="button">Import Base Layers</button>
+<button aria-describedby="print-layer-import-help" disabled="" id="print-clear-base-layers" type="button">Remove Imported</button>
+</div>
+<div aria-label="Layer order controls" class="button-row print-layer-order" role="group">
+<button aria-label="Move selected layer up" id="print-layer-up" type="button">Move Up</button>
+<button aria-label="Move selected layer down" id="print-layer-down" type="button">Move Down</button>
+</div>
+<fieldset aria-describedby="print-layer-transform-help" class="print-layer-transform" id="print-layer-transform">
+<legend>Layer Transform</legend>
+<p class="sr-only" id="print-layer-transform-help">Transform values apply to the selected movable image. Corner resizing updates Scale Percent and is included in print export.</p>
+<label for="print-layer-x">X Offset Pixels</label>
+<input id="print-layer-x" inputmode="numeric" step="1" type="number" value="0"/>
+<label for="print-layer-y">Y Offset Pixels</label>
+<input id="print-layer-y" inputmode="numeric" step="1" type="number" value="0"/>
+<label for="print-layer-scale">Scale Percent</label>
+<input id="print-layer-scale" inputmode="decimal" max="400" min="10" step="1" type="number" value="100"/>
+<label for="print-layer-rotation">Rotation Degrees</label>
+<input id="print-layer-rotation" inputmode="decimal" max="180" min="-180" step="1" type="number" value="0"/>
+<label for="print-layer-opacity">Opacity Percent</label>
+<input id="print-layer-opacity" inputmode="decimal" max="100" min="0" step="1" type="number" value="100"/>
+<div aria-label="Layer transform shortcuts" class="print-layer-transform-actions">
+<button id="print-layer-center" type="button">Center</button>
+<button id="print-layer-fit" type="button">Fit Canvas</button>
+<button aria-label="Rotate selected layer 90 degrees left" id="print-layer-rotate-left" type="button">↶ 90°</button>
+<button aria-label="Rotate selected layer 90 degrees right" id="print-layer-rotate-right" type="button">↷ 90°</button>
+</div>
+<button id="print-layer-reset" type="button">Reset Layer</button>
+</fieldset>
+<fieldset aria-describedby="print-layer-appearance-help" class="print-layer-appearance" id="print-layer-appearance">
+<legend>Layer Appearance</legend>
+<p class="sr-only" id="print-layer-appearance-help">Appearance controls affect only the selected editable image and are included in print export. Blend mode combines it with layers below. Color adjustments are nondestructive.</p>
+<label for="print-layer-blend">Blend With Layers Below</label>
+<select aria-describedby="print-layer-blend-help" class="styled-select" id="print-layer-blend">
+<option value="source-over">Normal</option>
+<optgroup label="Darken"><option value="multiply">Multiply</option><option value="darken">Darken</option><option value="color-burn">Color Burn</option></optgroup>
+<optgroup label="Lighten"><option value="screen">Screen</option><option value="lighten">Lighten</option><option value="color-dodge">Color Dodge</option></optgroup>
+<optgroup label="Contrast"><option value="overlay">Overlay</option><option value="soft-light">Soft Light</option><option value="hard-light">Hard Light</option></optgroup>
+<optgroup label="Compare"><option value="difference">Difference</option><option value="exclusion">Exclusion</option></optgroup>
+</select>
+<p class="hint" id="print-layer-blend-help">Blend modes compare this image with visible layers underneath. Darken does not lower the image brightness; use Brightness below 100% for that. On white paper, some blend modes may look unchanged or become white.</p>
+<label for="print-layer-brightness">Brightness %</label><input id="print-layer-brightness" max="200" min="0" step="1" type="number" value="100"/>
+<label for="print-layer-contrast">Contrast %</label><input id="print-layer-contrast" max="200" min="0" step="1" type="number" value="100"/>
+<label for="print-layer-saturation">Saturation %</label><input id="print-layer-saturation" max="300" min="0" step="1" type="number" value="100"/>
+<label for="print-layer-hue">Hue Degrees</label><input id="print-layer-hue" max="180" min="-180" step="1" type="number" value="0"/>
+<label for="print-layer-grayscale">Grayscale %</label><input id="print-layer-grayscale" max="100" min="0" step="1" type="number" value="0"/>
+<label for="print-layer-sepia">Sepia %</label><input id="print-layer-sepia" max="100" min="0" step="1" type="number" value="0"/>
+<label for="print-layer-invert">Invert %</label><input id="print-layer-invert" max="100" min="0" step="1" type="number" value="0"/>
+<div aria-label="Layer flip controls" class="button-row print-layer-flips" role="group"><button aria-pressed="false" id="print-layer-flip-x" type="button">Flip Horizontal</button><button aria-pressed="false" id="print-layer-flip-y" type="button">Flip Vertical</button></div>
+<button id="print-layer-reset-appearance" type="button">Reset Appearance</button>
+</fieldset>
+</aside>
+</div>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="custom-size-overlay">
+<section aria-labelledby="custom-size-title" aria-modal="true" class="modal-card custom-size-modal" role="dialog">
+<div class="modal-head">
+<h2 id="custom-size-title">Custom Size</h2>
+<button aria-label="Close custom size" class="mini-square-btn" id="close-custom-size-btn" type="button">×</button>
+</div>
+<p class="modal-note">Use width × height, for example 128x64. Large canvases can make drawing, undo, animation, and exporting slower.</p>
+<label for="custom-size-input">Canvas Size</label>
+<input id="custom-size-input" inputmode="numeric" placeholder="128x64" type="text" value="512x512"/>
+<p class="hint">Use a square or rectangle, like 300 × 300 or 128 × 64.</p>
+<div class="button-row action-row custom-size-actions">
+<button id="apply-custom-size-btn" type="button">Apply</button>
+</div>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="privacy-overlay">
+<section aria-labelledby="privacy-title" aria-modal="true" class="modal-card privacy-modal" role="dialog">
+<div class="modal-head">
+<h2 id="privacy-title">Privacy Policy</h2>
+<button aria-label="Close privacy policy" class="mini-square-btn" id="close-privacy-btn" type="button">×</button>
+</div>
+<div class="privacy-copy">
+<p><strong>Pixel Bug keeps your work on your device.</strong></p>
+<p>The desktop version uses local app storage and recovery files. The web version uses browser storage on your device.</p>
+<p>Projects and images are processed locally. Pixel Bug does not upload your artwork or project data.</p>
+<p>The web version is served through GitHub Pages. GitHub may process basic connection data needed to load the site.</p>
+<p>Files are saved only when you choose a save or export option. In the web version, your browser handles file access and downloads.</p>
+<p>Clearing app or browser site storage can remove autosave, gallery, snapshot, and recovery data. Keep separate project files for anything important.</p>
+</div>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="export-overlay">
+<section aria-describedby="export-help" aria-labelledby="export-title" aria-modal="true" class="modal-card export-modal" role="dialog">
+<div class="modal-head">
+<h2 id="export-title">Export</h2>
+<button aria-label="Close export options" class="mini-square-btn" id="close-export-btn" type="button">×</button>
+</div>
+<p class="modal-note" id="export-help">Choose one file type or save a reusable batch profile.</p>
+<div aria-labelledby="export-profile-title" class="export-profile-card">
+<h3 id="export-profile-title">Export Profile</h3>
+<div class="export-profile-grid">
+<label for="export-profile-select">Profile</label><select id="export-profile-select"></select>
+<label for="export-profile-name">Profile Name</label><input id="export-profile-name" maxlength="48" type="text" value="Game Atlas"/>
+<label for="export-base-name">File Name</label><input id="export-base-name" maxlength="80" type="text" value="pixel-bug-export"/>
+</div>
+<div aria-label="Batch export formats" class="export-format-grid" role="group">
+<label><input checked="" id="export-format-png" type="checkbox"/> PNG</label>
+<label><input checked="" id="export-format-sheet" type="checkbox"/> Spritesheet</label>
+<label><input id="export-format-gif" type="checkbox"/> GIF</label>
+<label><input id="export-format-apng" type="checkbox"/> APNG</label>
+<label><input id="export-format-webp" type="checkbox"/> WebP</label>
+<label><input id="export-format-project" type="checkbox"/> Project</label>
+</div>
+<div class="button-row action-row export-profile-actions">
+<button id="export-profile-new-btn" type="button">New Profile</button>
+<button id="export-profile-save-btn" type="button">Save Profile</button>
+<button id="export-profile-delete-btn" type="button">Delete Profile</button>
+<button id="export-batch-btn" type="button">Export Batch</button>
+</div>
+<output aria-live="polite" id="export-profile-status">Game Atlas selected.</output>
+</div>
+<div class="spritesheet-options" aria-labelledby="spritesheet-options-title">
+<h3 id="spritesheet-options-title">Spritesheet Options</h3>
+<div class="export-option-grid">
+<label for="sheet-columns">Columns</label><input id="sheet-columns" max="240" min="1" type="number" value="240"/>
+<label for="sheet-padding">Padding</label><input id="sheet-padding" max="64" min="0" type="number" value="0"/>
+<label for="sheet-margin">Margin</label><input id="sheet-margin" max="64" min="0" type="number" value="0"/>
+<label for="sheet-scale">Scale</label><input id="sheet-scale" max="16" min="1" type="number" value="1"/>
+<label for="sheet-name-template">Frame Names</label><input id="sheet-name-template" maxlength="48" type="text" value="frame-{index}"/>
+<label for="sheet-atlas-format">Atlas Format</label><select id="sheet-atlas-format"><option value="pixelbug">Pixel Bug</option><option value="aseprite">Aseprite JSON</option></select>
+<label class="play-check"><input id="sheet-trim" type="checkbox"/> Trim Frames</label>
+<label class="play-check"><input checked="" id="sheet-json" type="checkbox"/> Atlas JSON</label>
+</div>
+</div>
+<div aria-label="Export options" class="export-choice-grid" role="group">
+<button class="export-choice" id="export-png-btn" type="button">
+<strong>PNG</strong>
+<span>Current frame</span>
+</button>
+<button class="export-choice" id="export-sheet-btn" type="button">
+<strong>Spritesheet</strong>
+<span>Configured atlas layout</span>
+</button>
+<button class="export-choice" id="export-gif-btn" type="button">
+<strong>GIF</strong>
+<span>Animated preview</span>
+</button>
+<button class="export-choice" id="export-apng-btn" type="button">
+<strong>APNG</strong>
+<span>Animated PNG</span>
+</button>
+<button class="export-choice" id="export-webp-btn" type="button">
+<strong>WebP</strong>
+<span>Current frame</span>
+</button>
+<label class="export-choice file-export-choice" for="atlas-import-input">
+<strong>Import Atlas</strong>
+<span>PNG and JSON together</span>
+</label>
+<input accept=".json,.png,application/json,image/png" class="sr-only" id="atlas-import-input" multiple="" type="file"/>
+<label class="export-choice file-export-choice" for="spritesheet-import-input">
+<strong>Import Sheet</strong>
+<span>Slice a grid into animation frames</span>
+</label>
+<input accept="image/png,image/webp,image/jpeg" class="sr-only" id="spritesheet-import-input" type="file"/>
+</div>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="spritesheet-import-overlay">
+<section aria-describedby="spritesheet-import-description" aria-labelledby="spritesheet-import-title" aria-modal="true" class="modal-card" role="dialog">
+<div class="modal-head"><h2 id="spritesheet-import-title">Import Spritesheet</h2><button aria-label="Close spritesheet import" class="mini-square-btn" id="close-spritesheet-import-btn" type="button">×</button></div>
+<p class="modal-note" id="spritesheet-import-description">Slice a regular image grid into frames in a new project tab. Only complete cells are imported.</p>
+<div class="selection-transform-controls">
+<label for="spritesheet-cell-width">Frame Width</label><input id="spritesheet-cell-width" max="512" min="1" type="number" value="32"/>
+<label for="spritesheet-cell-height">Frame Height</label><input id="spritesheet-cell-height" max="512" min="1" type="number" value="32"/>
+<label for="spritesheet-margin">Outer Margin</label><input id="spritesheet-margin" max="4096" min="0" type="number" value="0"/>
+<label for="spritesheet-spacing">Cell Spacing</label><input id="spritesheet-spacing" max="4096" min="0" type="number" value="0"/>
+<label for="spritesheet-order">Frame Order</label><select id="spritesheet-order"><option value="row">Rows first</option><option value="column">Columns first</option></select>
+</div>
+<output aria-live="polite" id="spritesheet-import-status">Choose a spritesheet image.</output>
+<div class="button-row action-row"><button id="apply-spritesheet-import-btn" type="button">Import Frames</button><button id="cancel-spritesheet-import-btn" type="button">Cancel</button></div>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="export-preflight-overlay">
+<section aria-describedby="export-preflight-status" aria-labelledby="export-preflight-title" aria-modal="true" class="modal-card export-preflight-modal" role="dialog">
+<div class="modal-head"><h2 id="export-preflight-title">Export Preflight</h2><button aria-label="Close export preflight" class="mini-square-btn" id="close-export-preflight-btn" type="button">×</button></div>
+<dl class="export-preflight-details" id="export-preflight-details"></dl>
+<progress aria-label="Export progress" hidden="" id="export-preflight-progress"></progress>
+<output aria-live="polite" id="export-preflight-status">Review the export details before continuing.</output>
+<div class="button-row action-row"><button autofocus="" id="export-preflight-confirm-btn" type="button">Continue Export</button><button id="export-preflight-cancel-btn" type="button">Cancel</button></div>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="command-palette-overlay">
+<section aria-describedby="command-palette-help" aria-labelledby="command-palette-title" aria-modal="true" class="modal-card command-palette-modal" role="dialog">
+<div class="modal-head"><h2 id="command-palette-title">Commands</h2><button aria-label="Close command search" class="mini-square-btn" id="close-command-palette-btn" type="button">×</button></div>
+<p class="sr-only" id="command-palette-help">Search editor actions. Use arrow keys to choose a result and Enter to run it.</p>
+<label class="sr-only" for="command-palette-input">Search commands</label>
+<input aria-controls="command-palette-results" aria-describedby="command-palette-status" aria-expanded="true" aria-haspopup="listbox" autocomplete="off" id="command-palette-input" placeholder="Search commands" type="search"/>
+<div aria-label="Command results" class="command-palette-results" id="command-palette-results" role="listbox"></div>
+<output aria-live="polite" id="command-palette-status">Type to search editor actions.</output>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="selection-transform-overlay">
+<section aria-describedby="selection-transform-description" aria-labelledby="selection-transform-title" aria-modal="true" class="modal-card selection-transform-modal" role="dialog">
+<div class="modal-head"><h2 id="selection-transform-title">Selection Transform</h2><button aria-label="Close selection transform" class="mini-square-btn" id="close-selection-transform-btn" type="button">×</button></div>
+<p class="modal-note" id="selection-transform-description">Resize with nearest-neighbor pixels, rotate, reposition, and apply across the chosen frames and layers.</p>
+<div class="selection-transform-layout">
+<canvas aria-label="Selection transform preview" height="320" id="selection-transform-preview" width="320"></canvas>
+<div class="selection-transform-controls">
+<label for="selection-transform-x">X</label><input id="selection-transform-x" type="number" value="0"/>
+<label for="selection-transform-y">Y</label><input id="selection-transform-y" type="number" value="0"/>
+<label for="selection-transform-width">Width</label><input id="selection-transform-width" min="1" type="number" value="1"/>
+<label for="selection-transform-height">Height</label><input id="selection-transform-height" min="1" type="number" value="1"/>
+<label for="selection-transform-anchor">Anchor</label><select id="selection-transform-anchor"><option value="top-left">Top Left</option><option value="top-center">Top Center</option><option value="top-right">Top Right</option><option value="middle-left">Middle Left</option><option value="center">Center</option><option value="middle-right">Middle Right</option><option value="bottom-left">Bottom Left</option><option value="bottom-center">Bottom Center</option><option value="bottom-right">Bottom Right</option></select>
+<label for="selection-transform-rotation">Rotation</label><select id="selection-transform-rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select>
+<label for="selection-transform-scope">Scope</label><select id="selection-transform-scope"><option value="active-layer">Active Layer</option><option value="visible-layers">Visible Layers</option></select>
+<label for="selection-transform-frames">Frames</label><select id="selection-transform-frames"><option value="active">Active Frame</option><option value="selected">Selected Frames</option></select>
+<label class="play-check"><input checked="" id="selection-transform-aspect" type="checkbox"/> Lock Aspect</label>
+<label class="play-check"><input id="selection-transform-duplicate" type="checkbox"/> Keep Original</label>
+<label class="play-check"><input id="selection-transform-flip-h" type="checkbox"/> Flip Horizontal</label>
+<label class="play-check"><input id="selection-transform-flip-v" type="checkbox"/> Flip Vertical</label>
+</div>
+</div>
+<div class="button-row action-row"><button id="apply-selection-transform-btn" type="button">Apply Transform</button></div>
+<output aria-live="polite" id="selection-transform-status">Ready.</output>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="tilemap-editor-overlay">
+<section aria-describedby="tilemap-editor-description" aria-labelledby="tilemap-editor-title" aria-modal="true" class="modal-card tilemap-editor-modal" role="dialog">
+<div class="modal-head"><h2 id="tilemap-editor-title">Tile Map Editor</h2><button aria-label="Close tile map editor" class="mini-square-btn" id="close-tilemap-editor-btn" type="button">×</button></div>
+<p class="modal-note" id="tilemap-editor-description">Paint saved tiles on layers. Right-click erases. Collision, flip, and rotation settings are stored per map cell.</p>
+<div class="tilemap-editor-toolbar">
+<label for="tilemap-map-width">Width</label><input id="tilemap-map-width" max="128" min="1" type="number" value="16"/>
+<label for="tilemap-map-height">Height</label><input id="tilemap-map-height" max="128" min="1" type="number" value="16"/>
+<button id="tilemap-map-resize-btn" type="button">Resize Map</button>
+<label for="tilemap-layer-select">Layer</label><select id="tilemap-layer-select"></select>
+<button id="tilemap-layer-add-btn" type="button">Add Layer</button>
+<button id="tilemap-layer-delete-btn" type="button">Delete Layer</button>
+<label class="play-check"><input checked="" id="tilemap-layer-visible" type="checkbox"/> Visible</label>
+<label class="play-check"><input id="tilemap-cell-collision" type="checkbox"/> Collision</label>
+<label class="play-check"><input id="tilemap-cell-flip-h" type="checkbox"/> Flip H</label>
+<label class="play-check"><input id="tilemap-cell-flip-v" type="checkbox"/> Flip V</label>
+<label for="tilemap-cell-rotation">Rotate</label><select id="tilemap-cell-rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select>
+</div>
+<div class="tilemap-editor-workspace">
+<aside aria-labelledby="tilemap-tile-list-title" class="tilemap-palette">
+<h3 id="tilemap-tile-list-title">Saved Tiles</h3>
+<p class="sr-only" id="tilemap-tile-list-help">Choose the tile painted into map cells. Create tiles from selections in the main editor.</p>
+<div aria-describedby="tilemap-tile-list-help" aria-label="Saved map tiles" class="tilemap-tile-list" id="tilemap-tile-list" role="listbox"></div>
+</aside>
+<div class="tilemap-editor-stage"><canvas aria-label="Editable tile map" height="640" id="tilemap-map-canvas" tabindex="0" width="640"></canvas></div>
+</div>
+<div class="button-row action-row">
+<button id="tilemap-map-clear-btn" type="button">Clear Layer</button>
+<button id="tilemap-map-export-btn" type="button">Export Tiled JSON</button>
+<label class="button-label" for="tilemap-map-import-input">Import Tiled JSON</label>
+<input accept=".json,application/json" class="sr-only" id="tilemap-map-import-input" type="file"/>
+</div>
+<output aria-live="polite" id="tilemap-map-status">Map ready.</output>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="recent-projects-overlay">
+<section aria-labelledby="recent-projects-title" aria-modal="true" class="modal-card recent-projects-modal" role="dialog">
+<div class="modal-head"><h2 id="recent-projects-title">Recent Projects</h2><button aria-label="Close recent projects" class="mini-square-btn" id="close-recent-projects-btn" type="button">×</button></div>
+<p class="modal-note">Open a recently used project in a new tab.</p>
+<div aria-label="Recent project files" class="recent-project-list" id="recent-project-list"></div>
+<output aria-live="polite" id="recent-projects-status">Recent projects are stored on this device.</output>
+</section>
+</div>
+<div class="modal-overlay" hidden="" id="settings-overlay">
+<section aria-labelledby="settings-title" aria-modal="true" class="modal-card settings-modal" role="dialog">
+<div class="modal-head">
+<h2 id="settings-title">Settings</h2>
+<button aria-label="Close settings" class="mini-square-btn" id="close-settings-btn" type="button">×</button>
+</div>
+<div aria-label="Interface color settings" class="interface-settings">
+<h3>Interface Colors</h3>
+<div class="interface-scale-settings">
+<label for="settings-interface-scale">Interface Scale</label>
+<select aria-describedby="interface-scale-help" id="settings-interface-scale">
+<option value="80">80%</option>
+<option selected="" value="100">100%</option>
+<option value="125">125%</option>
+<option value="150">150%</option>
+<option value="175">175%</option>
+<option value="200">200%</option>
+</select>
+<output aria-live="polite" for="settings-interface-scale" id="settings-interface-scale-output">100%</output>
+<p id="interface-scale-help">Changes interface text and control labels without resizing panels or the artwork canvas.</p>
+</div>
+<label for="settings-theme-select">Palette</label>
+<select id="settings-theme-select">
+<option value="system">System</option>
+<option value="light">Original Light</option>
+<option value="dark">Original Dark</option>
+<option value="custom">Custom</option>
+</select>
+<label for="settings-paper-color">Background</label>
+<input id="settings-paper-color" type="color" value="#ffffff"/>
+<label for="settings-panel-color">Panels</label>
+<input id="settings-panel-color" type="color" value="#ffffff"/>
+<label for="settings-soft-color">Soft Fill</label>
+<input id="settings-soft-color" type="color" value="#f2f2f2"/>
+<label for="settings-ink-color">Lines and Text</label>
+<input id="settings-ink-color" type="color" value="#000000"/>
+<label for="settings-active-text-color">Active Button Text</label>
+<input id="settings-active-text-color" type="color" value="#ffffff"/>
+<div class="button-row action-row settings-actions">
+<button id="interface-light-btn" type="button">Original Light</button>
+<button id="interface-dark-btn" type="button">Original Dark</button>
+<button id="reset-interface-colors-btn" type="button">System Default</button>
+</div>
+<label for="custom-interface-palette-select">Saved Custom Palette</label>
+<select id="custom-interface-palette-select"></select>
+<label for="custom-interface-palette-name">Palette Name</label>
+<input id="custom-interface-palette-name" maxlength="32" type="text" value="Custom Palette"/>
+<div class="button-row action-row settings-actions">
+<button id="save-interface-palette-btn" type="button">Save Palette</button>
+<button id="apply-interface-palette-btn" type="button">Apply Palette</button>
+<button id="delete-interface-palette-btn" type="button">Delete Palette</button>
+</div>
+</div>
+<div aria-describedby="drawing-assistance-settings-help" aria-labelledby="drawing-assistance-settings-title" class="keyboard-canvas-settings">
+<h3 id="drawing-assistance-settings-title">Drawing Assistance</h3>
+<p id="drawing-assistance-settings-help">These preferences affect pointer and keyboard guidance only. They do not change saved artwork, project files, or exports.</p>
+<label><input aria-describedby="crosshair-settings-help" id="settings-canvas-crosshair" type="checkbox"/> Show keyboard cursor crosshair</label>
+<p class="sr-only" id="crosshair-settings-help">Shows full horizontal and vertical guide lines while the Base Mode pixel canvas has keyboard focus. The active pixel outline remains visible when this setting is off.</p>
+<label><input aria-describedby="cursor-contrast-settings-help" checked="" id="settings-canvas-high-contrast" type="checkbox"/> Use high contrast keyboard cursor edges</label>
+<p class="sr-only" id="cursor-contrast-settings-help">Adds contrasting edges to the keyboard cursor and optional crosshair for visibility on light and dark artwork.</p>
+<label><input aria-describedby="stabilize-settings-help" id="settings-stabilize" type="checkbox"/> Stabilize pointer painting</label>
+<p id="stabilize-settings-help">Reduces small unintended pointer movement for Pencil and Eraser in Base Mode and Paint and Erase in Voxel Mode, including direct painting in the 3D view.</p>
+</div>
+<div aria-describedby="accessibility-settings-help" aria-labelledby="accessibility-settings-title" class="keyboard-canvas-settings accessibility-settings">
+<h3 id="accessibility-settings-title">Accessibility</h3>
+<p id="accessibility-settings-help">These preferences change interface presentation only. Artwork, project files, and exports remain unchanged.</p>
+<label><input aria-describedby="reduced-motion-settings-help" id="settings-reduced-motion" type="checkbox"/> Reduce interface motion</label>
+<p class="sr-only" id="reduced-motion-settings-help">Stops decorative movement, animated route lines, and most interface transitions.</p>
+<label><input aria-describedby="strong-focus-settings-help" id="settings-strong-focus" type="checkbox"/> Use stronger focus outlines</label>
+<p class="sr-only" id="strong-focus-settings-help">Adds a larger double outline around the keyboard-focused control.</p>
+<label><input aria-describedby="large-target-settings-help" id="settings-large-targets" type="checkbox"/> Use larger control targets</label>
+<p class="sr-only" id="large-target-settings-help">Increases the minimum height of buttons, inputs, and selection controls for easier pointer and touch use.</p>
+<label for="settings-font-preset">Interface font</label>
+<select aria-describedby="font-preset-settings-help" id="settings-font-preset">
+<option value="system">Application Default</option>
+<option value="readable">Readable Sans</option>
+<option value="humanist">Humanist Sans</option>
+<option value="atkinson">Atkinson Hyperlegible if installed</option>
+<option value="dyslexic">OpenDyslexic if installed</option>
+</select>
+<p id="font-preset-settings-help">Uses a fixed list of local font families. Font files cannot be uploaded or downloaded through this setting.</p>
+<label><input aria-describedby="bold-text-settings-help" id="settings-bold-text" type="checkbox"/> Use extra bold interface text</label>
+<p class="sr-only" id="bold-text-settings-help">Makes interface labels, controls, and supporting text use a heavier font weight.</p>
+<label for="settings-text-size">Text size</label>
+<select id="settings-text-size"><option value="compact">Compact</option><option selected="" value="standard">Standard</option><option value="large">Large</option><option value="larger">Larger</option></select>
+<label for="settings-text-weight">Text weight</label>
+<select id="settings-text-weight"><option selected="" value="standard">Standard</option><option value="semibold">Semibold</option><option value="bold">Bold</option></select>
+<label for="settings-line-spacing">Line spacing</label>
+<select id="settings-line-spacing"><option selected="" value="standard">Standard</option><option value="roomy">Roomy</option><option value="widest">Widest</option></select>
+<label for="settings-letter-spacing">Letter spacing</label>
+<select id="settings-letter-spacing"><option selected="" value="standard">Standard</option><option value="wide">Wide</option><option value="wider">Wider</option></select>
+<label><input id="settings-reduce-italics" type="checkbox"/> Replace italic interface text</label>
+<label><input id="settings-high-contrast" type="checkbox"/> Increase interface contrast</label>
+<label><input id="settings-reduce-transparency" type="checkbox"/> Reduce interface transparency</label>
+<label><input id="settings-reduce-shadows" type="checkbox"/> Reduce decorative shadows</label>
+<label><input id="settings-clearer-selection" type="checkbox"/> Emphasize active tools and selections</label>
+<label><input checked="" id="settings-announce-actions" type="checkbox"/> Announce editor actions to screen readers</label>
+<output aria-live="polite" class="font-settings-sample" id="font-settings-sample">Sample text: Pixel Bug Aa 123</output>
+<output aria-live="polite" class="sr-only" id="accessibility-settings-status">Accessibility preferences ready.</output>
+</div>
+<div aria-labelledby="recovery-settings-title" class="keyboard-canvas-settings recovery-settings">
+<h3 id="recovery-settings-title">Recovery Backups</h3>
+<p>Pixel Bug keeps a bounded set of rotating recovery snapshots. They do not replace normal project saves.</p>
+<div class="button-row action-row settings-actions"><button id="create-recovery-snapshot-btn" type="button">Create Snapshot</button><button id="refresh-recovery-snapshots-btn" type="button">Refresh</button></div>
+<div aria-label="Recovery snapshots" class="recovery-snapshot-list" id="recovery-snapshot-list"></div>
+<output aria-live="polite" id="recovery-snapshot-status">Recovery snapshots have not been loaded.</output>
+</div>
+<div aria-labelledby="project-health-title" class="keyboard-canvas-settings project-health-settings">
+<h3 id="project-health-title">Project Overview</h3>
+<p>Review project size, embedded assets, and memory-heavy features before they approach guarded limits.</p>
+<dl class="project-health-grid" id="project-health-grid"></dl>
+<div class="project-health-warnings" id="project-health-warnings"></div>
+<div class="button-row action-row settings-actions"><button id="refresh-project-health-btn" type="button">Refresh Overview</button></div>
+<output aria-live="polite" class="sr-only" id="project-health-status">Project health ready.</output>
+</div>
+<h3 id="shortcut-settings-title">Keyboard Shortcuts</h3>
+<p class="modal-note">Click a shortcut box, then press the new key. Reserved application and operating-system shortcuts are blocked.</p>
+<div aria-labelledby="shortcut-settings-title" class="shortcut-settings-list" id="shortcut-settings-list"></div>
+<output aria-live="polite" id="shortcut-settings-status">Shortcut editor ready.</output>
+<div class="button-row action-row settings-actions">
+<button id="reset-shortcuts-btn" type="button">Reset Shortcuts</button>
+</div>
+</section>
+</div>
+<script src="./modules/psd-template.js"></script>
+<script src="./web-bridge.js"></script>
+<script src="./modules/project-package.js"></script>
+<script src="./modules/session-recovery.js"></script>
+<script src="./modules/history-patches.js"></script>
+<script src="./modules/accessibility-preferences.js"></script>
+<script src="./modules/shortcut-preferences.js"></script>
+<script src="./modules/project-health.js"></script>
+<script src="./modules/mod-permissions.js"></script>
+<script src="./modules/mod-code-policy.js"></script>
+<script src="./modules/export-preflight.js"></script>
+<script src="./modules/render-workflow.js"></script>
+<script src="./modules/canvas-fit.js"></script>
+<script src="./modules/project-guard.js"></script>
+<script src="./modules/editor-features.js"></script>
+<script src="./modules/image-operations.js"></script>
+<script src="./modules/voxel-features.js"></script>
+<script src="./modules/voxel-weighting.js"></script>
+<script src="./modules/audio-studio.js"></script>
+<script src="./modules/play-runtime-core.js"></script>
+<script src="./modules/tiny-game-export.js"></script>
+<script src="./modules/renderer/play-workspace.js"></script>
+<script src="./modules/workflow-features.js"></script>
+<script src="./modules/renderer/drawing-tools.js"></script>
+<script src="./modules/renderer/play-authoring-state.js"></script>
+<script src="./modules/renderer/spritesheet-tools.js"></script>
+<script src="./modules/renderer/editor-preferences.js"></script>
+<script src="./modules/renderer/mode-workflow.js"></script>
+<script src="./modules/renderer/recovery-panel.js"></script>
+<script src="./modules/renderer/recovery-workflow.js"></script>
+<script src="./modules/renderer/project-serialization.js"></script>
+<script src="./modules/renderer/pixel-grid-cache.js"></script>
+<script src="./modules/renderer/stroke-render-cache.js"></script>
+<script src="./modules/renderer/print-appearance.js"></script>
+<script src="./modules/renderer/print-workspace.js"></script>
+<script src="./modules/renderer/mod-workspace.js"></script>
+<script src="./modules/renderer/export-codecs.js"></script>
+<script src="./modules/renderer/model-parser.js"></script>
+<script src="./modules/renderer/animation-workflow.js"></script>
+<script src="./modules/renderer/command-workflow.js"></script>
+<script src="./modules/renderer/document-workflow.js"></script>
+<script src="./modules/renderer/export-workflow.js"></script>
+<script src="./modules/renderer/palette-workflow.js"></script>
+<script src="./modules/renderer/tilemap-workflow.js"></script>
+<script src="./modules/renderer/transform-workflow.js"></script>
+<script src="./modules/renderer/selection-workflow.js"></script>
+<script src="./modules/renderer/photoshop-workflow.js"></script>
+<script src="./renderer.js"></script>
+<script src="./modules/project-gallery.js"></script>
+<script src="./modules/snapshot-history.js"></script>
+<script src="./modules/node-editor.js"></script>
+<script src="./modules/play-mode-guide.js"></script>
+<script src="./modules/play-layout.js"></script>
+<script src="./modules/play-workspaces.js"></script>
+<script src="./modules/modal-accessibility.js"></script>
+<script src="./modules/accessibility-labels.js"></script>
+<script src="./modules/voxel-animation-workspace.js"></script>
+<script src="./modules/voxel-workspaces.js"></script>
+</body>
+</html>
